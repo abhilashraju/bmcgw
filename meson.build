@@ -8,20 +8,30 @@ project(
     'cpp_std=c++23',
   ])
 
-#REACTOR_ARGS=['-DBOOST_URL_NO_SOURCE_LOCATION']
+
+#add_project_arguments('-DSSL_ON', language : 'cpp')
 
 openssl_dep = dependency('openssl', version: '>=1.1.1')
 boost_dep = dependency('boost',modules: ['coroutine','url'])
 json_dep = dependency('nlohmann_json')
-gtest = subproject('gtest')
+#gtest = subproject('gtest')
 chaibeast=subproject('chaibeast')
-chaibeast=subproject('reactor')
-#benchmark = subproject('benchmark')
+reactor=subproject('reactor')
+chaibeast_dep=chaibeast.get_variable('chaibeast_dep')
+reactor_dep=reactor.get_variable('reactor_dep')
 
 core_includes = include_directories(['./include'])
-reactor_dep = declare_dependency(
-	include_directories : core_includes,
-	dependencies : [dependency('threads'),openssl_dep,boost_dep,json_dep]
-)
+bmcgw_sources = [
+    'src/bmcgw.cpp'
+]
+
+
+bmcgw = executable('bmcgw', 
+    [bmcgw_sources], 
+    include_directories : core_includes,
+    dependencies : [reactor_dep,chaibeast_dep], 
+    )
+
+
 
 
