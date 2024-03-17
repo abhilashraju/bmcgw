@@ -17,7 +17,7 @@ struct Aggregator
     {
         "Exposes": [
             {
-                "Hostname": "xxxxx",
+                "Hostname": "xxxx",
                 "Port": "443",
                 "Name": "sat0",
                 "Type": "SatelliteController",
@@ -36,8 +36,10 @@ struct Aggregator
     struct RequestBlock
     {
         size_t count{0};
+        using ResultEntityType =
+            ResponseEntity<nlohmann::json, Requester::Response>;
         using ResultType =
-            HttpExpected<ResponseEntity<nlohmann::json, Requester::Response>>;
+            std::pair<std::string, HttpExpected<ResultEntityType>>;
         std::vector<ResultType> results;
         std::function<void(std::vector<ResultType>)> onFinish;
         void finish()
@@ -57,7 +59,7 @@ struct Aggregator
         std::string port = v["Port"];
         std::string authType = v["AuthType"];
         Requester r(ioc);
-        r.withMachine(hostname).withPort(port);
+        r.withMachine(hostname).withPort(port).withName(std::move(name));
         if (authType != "None")
         {
             r.withCredentials("xxx", "xxx");
@@ -80,8 +82,8 @@ struct Aggregator
                                             .onFinish = std::move(cont)});
         for (auto& r : requesters)
         {
-            r.aggregate(req, [this, target](auto& v) {
-                blocks[target].results.push_back(v);
+            r.aggregate(req, [this, target, name = r.name](auto& v) {
+                blocks[target].results.push_back(std::make_pair(name, v));
                 if (--blocks[target].count == 0)
                 {
                     blocks[target].finish();
@@ -90,32 +92,73 @@ struct Aggregator
             });
         }
     }
+    static void mergeMembers(auto& outer, nlohmann::json& member,
+                             const std::string& name)
+    {
+        auto& innerMembers =
+            member["Members"].get_ref<nlohmann::json::array_t&>();
+        for (auto& member : innerMembers)
+        {
+            if (member != nullptr)
+            {
+                std::string id = member["@odata.id"];
+                auto splitId = split(id, '/');
+                splitId.back() = name + "_" + splitId.back();
+                member["@odata.id"] = join(splitId | std::views::drop(1), '/');
+                outer.emplace_back(member);
+            }
+        }
+    }
     auto mergeWithAggregated(StringbodyRequest req, nlohmann::json& body)
     {
         aggregate(std::move(req), [&body](auto r) {
+            auto& members = body["Members"].get_ref<nlohmann::json::array_t&>();
             for (auto& v : r)
             {
-                if (v.isError())
+                if (v.second.isError())
                 {
-                    CLIENT_LOG_ERROR("Error: {}", v.error().message());
+                    CLIENT_LOG_ERROR("Error: {}", v.second.error().message());
                     continue;
                 }
-                auto j = v.response().data();
+                auto j = v.second.response().data();
+                mergeMembers(members, j, v.first);
+                body["Members@odata.count"] = members.size();
                 CLIENT_LOG_INFO("Response: {}", j.dump(4));
             }
         });
     }
+    auto findItemRequester(const std::string& item)
+    {
+        return std::ranges::find_if(requesters, [&item](auto& v) {
+            return item.starts_with(v.name + "_");
+        });
+    }
     auto forward(Requester::Client::Session::Request req, auto&& cont)
     {
+        auto iter = findItemRequester(split(req.target(), '/').back());
+        if (iter != std::end(requesters))
+        {
+            iter->forward(iter->applyToken(std::move(req)), std::move(cont));
+            return;
+        }
         masterController.forward(std::move(req), cont);
     }
     Aggregator* getForwarder(const std::string& path)
     {
         return this;
     }
+
+    bool isAggregatedItem(const std::string& item)
+    {
+        return findItemRequester(item) != std::end(requesters);
+    }
     bool isAggregatedResource(const std::string& path)
     {
         const auto& segments = split(path, '/');
+        if (isAggregatedItem(segments.back()))
+        {
+            return false;
+        }
         static std::array<const char*, 3> aggregateResourcesPath = {
             "", "redfish", "v1"};
         auto iter = std::mismatch(std::begin(segments), std::end(segments),
@@ -132,7 +175,7 @@ struct Aggregator
             CLIENT_LOG_INFO("Resource List Query");
             return true;
         }
-        static std::array<const char*, 2> exclusionList = {"$metadata",
+        static std::array<const char*, 3> exclusionList = {"", "$metadata",
                                                            "JsonSchemas"};
         auto iter2 = std::find(std::begin(exclusionList),
                                std::end(exclusionList), *iter.first);
@@ -157,7 +200,7 @@ struct Aggregator
             {
                 nlohmann::json body = nlohmann::json::parse(results.body());
                 mergeWithAggregated(*stringRequest, body);
-                results.body() = body.dump(4);
+                results.body() = body.dump(2);
             }
             CLIENT_LOG_INFO("Response: {}", results.body());
         });

@@ -9,6 +9,7 @@ struct Requester
     using Client = WebClient<SslStream, http::string_body>;
     using Request = Client::Request;
     using Response = Client::Response;
+    std::string name;
     std::string token;
     std::string machine;
     std::string port{"443"};
@@ -27,6 +28,11 @@ struct Requester
     Requester& withMachine(std::string machine)
     {
         this->machine = std::move(machine);
+        return *this;
+    }
+    Requester& withName(std::string nm)
+    {
+        this->name = std::move(nm);
         return *this;
     }
     Requester& withPort(std::string port)
@@ -82,9 +88,16 @@ struct Requester
         }
         cont();
     }
+    Client::Session::Request&& applyToken(Client::Session::Request&& req)
+    {
+        req.set("X-Auth-Token", token);
+        return std::move(req);
+    }
     template <typename Contiuation>
     void forward(Client::Session::Request req, Contiuation cont)
     {
+        CLIENT_LOG_INFO("Forwarding to: {} with token {}", machine,
+                        req["X-Auth-Token"]);
         req.set(http::field::host, machine);
         auto mono =
             Client::builder()

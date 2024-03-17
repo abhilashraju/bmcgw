@@ -15,4 +15,13 @@ inline auto split(const std::string_view& input, char c)
     auto vw = input | stringSplitter(c);
     return std::vector(vw.begin(), vw.end());
 }
+inline auto join(const auto& input, char c)
+{
+    std::string result;
+    for (auto v : input)
+    {
+        result += c + v;
+    }
+    return result;
+}
 } // namespace bmcgw
