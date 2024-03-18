@@ -62,7 +62,7 @@ struct Aggregator
         r.withMachine(hostname).withPort(port).withName(std::move(name));
         if (authType != "None")
         {
-            r.withCredentials("xxx", "xxx");
+            r.withCredentials("xxxx", "xxx");
         }
         return r;
     }
@@ -127,18 +127,27 @@ struct Aggregator
             }
         });
     }
-    auto findItemRequester(const std::string& item)
+    auto findResourceRequester(const std::string& item)
     {
         return std::ranges::find_if(requesters, [&item](auto& v) {
             return item.starts_with(v.name + "_");
         });
     }
+    auto&& stripSateliteInfo(StringbodyRequest&& req)
+    {
+        auto path = req.target();
+        auto segments = split(path, '/');
+        segments.back() = segments.back().substr(segments.back().find('_') + 1);
+        req.target(join(segments | std::views::drop(1), '/'));
+        return std::move(req);
+    }
     auto forward(Requester::Client::Session::Request req, auto&& cont)
     {
-        auto iter = findItemRequester(split(req.target(), '/').back());
+        auto iter = findResourceRequester(split(req.target(), '/').back());
         if (iter != std::end(requesters))
         {
-            iter->forward(iter->applyToken(std::move(req)), std::move(cont));
+            iter->forward(iter->applyToken(stripSateliteInfo(std::move(req))),
+                          std::move(cont));
             return;
         }
         masterController.forward(std::move(req), cont);
@@ -148,14 +157,19 @@ struct Aggregator
         return this;
     }
 
-    bool isAggregatedItem(const std::string& item)
+    bool isAggregatedResource(const std::string& item)
     {
-        return findItemRequester(item) != std::end(requesters);
+        return findResourceRequester(item) != std::end(requesters);
     }
-    bool isAggregatedResource(const std::string& path)
+    bool isAggregatedCollection(StringbodyRequest* req)
     {
+        if (req->method() != http::verb::get)
+        {
+            return false;
+        }
+        auto path = req->target();
         const auto& segments = split(path, '/');
-        if (isAggregatedItem(segments.back()))
+        if (isAggregatedResource(segments.back()))
         {
             return false;
         }
@@ -196,10 +210,14 @@ struct Aggregator
         Requester::Response results;
         forward(*stringRequest, [&results, stringRequest, this](auto v) {
             results = std::move(v.response());
-            if (isAggregatedResource(stringRequest->target()))
+            if (isAggregatedCollection(stringRequest))
             {
                 nlohmann::json body = nlohmann::json::parse(results.body());
-                mergeWithAggregated(*stringRequest, body);
+                if (body["Members"] != nullptr)
+                {
+                    mergeWithAggregated(*stringRequest, body);
+                }
+
                 results.body() = body.dump(2);
             }
             CLIENT_LOG_INFO("Response: {}", results.body());
