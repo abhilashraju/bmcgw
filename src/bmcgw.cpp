@@ -1,9 +1,8 @@
 #include "bmcgw.hpp"
 
+#include "asyncserver.hpp"
 #include "command_line_parser.hpp"
-#include "http_server.hpp"
 
-#include <exec/static_thread_pool.hpp>
 #include <utilities.hpp>
 
 #include <chrono>
@@ -11,7 +10,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-using namespace chai;
+
 constexpr const char* trustStorePath = "/etc/ssl/certs/authority";
 constexpr const char* x509Comment = "Generated from OpenBMC service";
 using namespace bmcgw;
@@ -26,19 +25,25 @@ int main(int argc, const char* argv[])
         std::cout << "eg: bmcgw -p port\n";
         return 0;
     }
-    exec::static_thread_pool threadPool;
-    Aggregator aggregator;
-
+    try
+    {
+        Aggregator aggregator;
 #ifdef SSL_ON
-    SSlServer server(
-        port, aggregator,
-        "/Users/abhilashraju/work/cpp/chai/certs/server-certificate.pem",
-        "/Users/abhilashraju/work/cpp/chai/certs/server-private-key.pem",
-        "/etc/ssl/certs/authority");
+        AsyncSslServer<Aggregator> server(
+            aggregator, port,
+            "/Users/abhilashraju/work/cpp/chai/certs/server-certificate.pem",
+            "/Users/abhilashraju/work/cpp/chai/certs/server-private-key.pem",
+            "/etc/ssl/certs/authority");
 #else
-    TCPServer server(port, aggregator);
+
 #endif
 
-    server.start(threadPool);
+        server.start();
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << e.what() << '\n';
+    }
+
     return 0;
 }

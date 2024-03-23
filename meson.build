@@ -9,15 +9,15 @@ project(
   ])
 
 
-#add_project_arguments('-DSSL_ON', language : 'cpp')
+add_project_arguments('-DSSL_ON', language : 'cpp')
 
 openssl_dep = dependency('openssl', version: '>=1.1.1')
 boost_dep = dependency('boost',modules: ['coroutine','url'])
 json_dep = dependency('nlohmann_json')
 #gtest = subproject('gtest')
-chaibeast=subproject('chaibeast')
+#chaibeast=subproject('chaibeast')
 reactor=subproject('reactor')
-chaibeast_dep=chaibeast.get_variable('chaibeast_dep')
+#chaibeast_dep=chaibeast.get_variable('chaibeast_dep')
 reactor_dep=reactor.get_variable('reactor_dep')
 
 core_includes = include_directories(['./include'])
@@ -29,7 +29,7 @@ bmcgw_sources = [
 bmcgw = executable('bmcgw', 
     [bmcgw_sources], 
     include_directories : core_includes,
-    dependencies : [reactor_dep,chaibeast_dep], 
+    dependencies : [reactor_dep], 
     )
 
 

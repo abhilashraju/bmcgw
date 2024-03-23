@@ -1,7 +1,7 @@
 #pragma once
 #include "http/web_client.hpp"
 using namespace reactor;
-using namespace chai;
+
 namespace bmcgw
 {
 struct Requester

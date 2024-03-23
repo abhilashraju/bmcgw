@@ -1,14 +1,13 @@
 #pragma once
 #include "common_defs.hpp"
-#include "http_errors.hpp"
+// #include "http_errors.hpp"
 #include "requester.hpp"
 #include "utilities.hpp"
 
 #include <filesystem>
 #include <functional>
 #include <ranges>
-namespace http = chai::http;
-namespace beast = chai::beast;
+
 namespace bmcgw
 {
 struct Aggregator
@@ -17,7 +16,7 @@ struct Aggregator
     {
         "Exposes": [
             {
-                "Hostname": "xxxx",
+                "Hostname": "rain100bmc.aus.stglabs.ibm.com",
                 "Port": "443",
                 "Name": "sat0",
                 "Type": "SatelliteController",
@@ -25,7 +24,7 @@ struct Aggregator
             }
         ],
         "Master": {
-            "Hostname": "xxxx",
+            "Hostname": "rain127bmc.aus.stglabs.ibm.com",
             "Port": "443",
             "Name": "master",
             "Type": "MasterController",
@@ -62,7 +61,7 @@ struct Aggregator
         r.withMachine(hostname).withPort(port).withName(std::move(name));
         if (authType != "None")
         {
-            r.withCredentials("xxxx", "xxx");
+            r.withCredentials("service", "0penBmc0");
         }
         return r;
     }
@@ -200,7 +199,21 @@ struct Aggregator
         }
         return true;
     }
-    auto operator()(VariantRequest& request) -> VariantResponse
+    auto operator()(VariantRequest&& request, auto& ioc, auto&& cont)
+    {
+        try
+        {
+            auto resp = (*this)(std::move(request));
+            cont(std::move(resp));
+        }
+        catch (const std::exception& e)
+        {
+            CLIENT_LOG_ERROR("Error: {}", e.what());
+            StringbodyResponse res{http::status::internal_server_error, 11};
+            cont(VariantResponse(std::move(res)));
+        }
+    }
+    auto operator()(VariantRequest&& request) -> VariantResponse
     {
         auto stringRequest = std::get_if<StringbodyRequest>(&request);
         if (!stringRequest)
