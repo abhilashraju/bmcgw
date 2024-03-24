@@ -18,16 +18,24 @@ using namespace bmcgw;
 int main(int argc, const char* argv[])
 {
     // Create a server endpoint
-    auto [port, root] = getArgs(parseCommandline(argc, argv), "-p", "-r");
-    if (port.empty())
+    auto [port, conffile] = getArgs(parseCommandline(argc, argv), "-p", "-c");
+    if (port.empty() || conffile.empty())
     {
         std::cout << "Invalid arguments\n";
-        std::cout << "eg: bmcgw -p port\n";
+        std::cout << "eg: bmcgw -p port -c config path\n";
         return 0;
     }
     try
     {
-        Aggregator aggregator;
+        std::ifstream file(conffile);
+        if (!file.is_open())
+        {
+            std::cout << "Invalid config file\n";
+            return 0;
+        }
+        std::string conf((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+        Aggregator aggregator(conf);
 #ifdef SSL_ON
         AsyncSslServer<Aggregator> server(
             aggregator, port,
