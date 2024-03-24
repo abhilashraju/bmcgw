@@ -89,40 +89,21 @@ struct SslStreamMaker
 {
     struct SSlStreamReader
     {
-        std::unique_ptr<net::io_context> ctx{
-            std::make_unique<net::io_context>()};
-        ssl::stream<tcp::socket> stream_;
-        SSlStreamReader(const SSlStreamReader&) = delete;
-        SSlStreamReader(SSlStreamReader&&) = default;
-        SSlStreamReader(net::io_context& ioctx, ssl::context& sslContext) :
-            stream_(ioctx, sslContext)
-        {}
-        auto read(beast::error_code& ec)
-        {
-            beast::flat_buffer buffer;
-            StringbodyRequest request;
-            http::read(stream_, buffer, request, ec);
-            return VariantRequest{std::move(request)};
-        }
+        using StreamType = ssl::stream<tcp::socket>;
+        std::shared_ptr<StreamType> stream_;
 
-        auto read()
-        {
-            beast::error_code ec{};
-            auto ret = read(ec);
-            if (ec)
-            {
-                throw std::runtime_error(ec.message());
-            }
-            return ret;
-        }
+        SSlStreamReader(net::io_context& ioctx, ssl::context& sslContext) :
+            stream_(std::make_shared<StreamType>(ioctx, sslContext))
+        {}
+        ~SSlStreamReader() {}
         void close(beast::error_code& ec)
         {
-            stream_.shutdown(ec);
-            stream_.next_layer().close();
+            stream_->shutdown(ec);
+            stream_->next_layer().close();
         }
         ssl::stream<tcp::socket>& stream()
         {
-            return stream_;
+            return *stream_;
         }
     };
     ssl::context sslContext;
@@ -130,14 +111,7 @@ struct SslStreamMaker
                    const char* certsDirectory) :
         sslContext(getSslServerContext(pemFile, privKey, certsDirectory))
     {}
-    SSlStreamReader acceptConnection(net::io_context& ioContext,
-                                     tcp::acceptor& acceptor)
-    {
-        SSlStreamReader reader(ioContext, sslContext);
-        acceptor.accept(reader.stream().next_layer());
-        reader.stream().handshake(ssl::stream_base::server);
-        return reader;
-    }
+
     void acceptAsyncConnection(net::io_context& ioContext,
                                tcp::acceptor& acceptor, auto work)
     {

@@ -6,7 +6,7 @@ namespace bmcgw
 {
 struct Requester
 {
-    using Client = WebClient<SslStream, http::string_body>;
+    using Client = WebClient<AsyncSslStream, http::string_body>;
     using Request = Client::Request;
     using Response = Client::Response;
     std::string name;
@@ -94,7 +94,7 @@ struct Requester
         return std::move(req);
     }
     template <typename Contiuation>
-    void forward(Client::Session::Request req, Contiuation cont)
+    void forward(Client::Session::Request req, Contiuation&& cont)
     {
         CLIENT_LOG_INFO("Forwarding to: {} with token {}", machine,
                         req["X-Auth-Token"]);
@@ -106,7 +106,9 @@ struct Requester
                 .create()
                 .withRequest(req)
                 .toMono();
-        mono->subscribe(cont);
+        mono->subscribe([mono, cont = std::move(cont)](auto v) mutable {
+            cont(std::move(v));
+        });
     }
     template <typename Contiuation>
     void aggregate(Client::Session::Request req, Contiuation cont)

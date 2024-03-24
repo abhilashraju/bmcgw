@@ -20,9 +20,8 @@ using StringbodyResponse = http::response<http::string_body>;
 using DynamicbodyResponse = http::response<http::dynamic_body>;
 using EmptybodyResponse = http::response<http::empty_body>;
 
-using VariantResponse =
-    std::variant<EmptybodyResponse, FilebodyResponse, FilebodyBase64Response,
-                 StringbodyResponse, DynamicbodyResponse>;
+using VariantResponse = std::variant<EmptybodyResponse, FilebodyResponse,
+                                     StringbodyResponse, DynamicbodyResponse>;
 using FilebodyRequest = http::request<http::file_body>;
 using StringbodyRequest = http::request<http::string_body>;
 using DynamicbodyRequest = http::request<http::dynamic_body>;

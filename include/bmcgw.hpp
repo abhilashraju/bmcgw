@@ -16,7 +16,7 @@ struct Aggregator
     {
         "Exposes": [
             {
-                "Hostname": "rain100bmc.aus.stglabs.ibm.com",
+                "Hostname": "xxxxx",
                 "Port": "443",
                 "Name": "sat0",
                 "Type": "SatelliteController",
@@ -24,7 +24,7 @@ struct Aggregator
             }
         ],
         "Master": {
-            "Hostname": "rain127bmc.aus.stglabs.ibm.com",
+            "Hostname": "xxxxx",
             "Port": "443",
             "Name": "master",
             "Type": "MasterController",
@@ -46,10 +46,10 @@ struct Aggregator
             onFinish(std::move(results));
         }
     };
-    net::io_context ioc;
+    std::optional<std::reference_wrapper<net::io_context>> ioc;
     std::vector<Requester> requesters;
     std::unordered_map<std::string, RequestBlock> blocks;
-    Requester masterController;
+    std::optional<Requester> masterController;
     Requester makeRequester(nlohmann::json& v)
     {
         std::string name = v["Name"];
@@ -57,23 +57,24 @@ struct Aggregator
         std::string hostname = v["Hostname"];
         std::string port = v["Port"];
         std::string authType = v["AuthType"];
-        Requester r(ioc);
+        Requester r(ioc.value().get());
         r.withMachine(hostname).withPort(port).withName(std::move(name));
         if (authType != "None")
         {
-            r.withCredentials("service", "0penBmc0");
+            r.withCredentials("xxx", "xxx");
         }
         return r;
     }
-
-    Aggregator() : masterController(makeRequester(routeConfig["Master"]))
+    void makeRequesters()
     {
+        masterController.emplace(makeRequester(routeConfig["Master"]));
         auto array = routeConfig["Exposes"].get<std::vector<nlohmann::json>>();
         for (auto& v : array)
         {
             requesters.emplace_back(makeRequester(v));
         }
     }
+    Aggregator() {}
     auto aggregate(Requester::Client::Session::Request req, auto&& cont)
     {
         std::string target = req.target();
@@ -108,9 +109,11 @@ struct Aggregator
             }
         }
     }
-    auto mergeWithAggregated(StringbodyRequest req, nlohmann::json& body)
+    auto mergeWithAggregated(StringbodyRequest req, StringbodyResponse&& res,
+                             nlohmann::json&& body, auto&& cont)
     {
-        aggregate(std::move(req), [&body](auto r) {
+        aggregate(std::move(req), [body = std::move(body), res = std::move(res),
+                                   cont = std::move(cont)](auto r) mutable {
             auto& members = body["Members"].get_ref<nlohmann::json::array_t&>();
             for (auto& v : r)
             {
@@ -122,8 +125,11 @@ struct Aggregator
                 auto j = v.second.response().data();
                 mergeMembers(members, j, v.first);
                 body["Members@odata.count"] = members.size();
-                CLIENT_LOG_INFO("Response: {}", j.dump(4));
             }
+            res.body() = body.dump(2);
+            CLIENT_LOG_INFO("Response: {}", body.dump(4));
+            res.prepare_payload();
+            cont(VariantResponse(res));
         });
     }
     auto findResourceRequester(const std::string& item)
@@ -149,24 +155,28 @@ struct Aggregator
                           std::move(cont));
             return;
         }
-        masterController.forward(std::move(req), cont);
+        masterController.value().forward(std::move(req), std::move(cont));
     }
     Aggregator* getForwarder(const std::string& path)
     {
         return this;
     }
-
+    void setIoContext(std::reference_wrapper<net::io_context> ioc)
+    {
+        this->ioc = ioc;
+        makeRequesters();
+    }
     bool isAggregatedResource(const std::string& item)
     {
         return findResourceRequester(item) != std::end(requesters);
     }
-    bool isAggregatedCollection(StringbodyRequest* req)
+    bool isAggregatedCollection(StringbodyRequest& req)
     {
-        if (req->method() != http::verb::get)
+        if (req.method() != http::verb::get)
         {
             return false;
         }
-        auto path = req->target();
+        auto path = req.target();
         const auto& segments = split(path, '/');
         if (isAggregatedResource(segments.back()))
         {
@@ -199,44 +209,43 @@ struct Aggregator
         }
         return true;
     }
-    auto operator()(VariantRequest&& request, auto& ioc, auto&& cont)
-    {
-        try
-        {
-            auto resp = (*this)(std::move(request));
-            cont(std::move(resp));
-        }
-        catch (const std::exception& e)
-        {
-            CLIENT_LOG_ERROR("Error: {}", e.what());
-            StringbodyResponse res{http::status::internal_server_error, 11};
-            cont(VariantResponse(std::move(res)));
-        }
-    }
-    auto operator()(VariantRequest&& request) -> VariantResponse
+    auto operator()(VariantRequest&& request, auto&& cont)
     {
         auto stringRequest = std::get_if<StringbodyRequest>(&request);
         if (!stringRequest)
         {
-            throw std::runtime_error("Request type miss match");
+            CLIENT_LOG_ERROR("Error: {}", "Type miss match");
+            StringbodyResponse res{http::status::internal_server_error, 11};
+            cont(VariantResponse(std::move(res)));
+            return;
         }
-        Requester::Response results;
-        forward(*stringRequest, [&results, stringRequest, this](auto v) {
-            results = std::move(v.response());
-            if (isAggregatedCollection(stringRequest))
+        auto req = *stringRequest; // copy request
+        forward(*stringRequest, [req = std::move(req), this,
+                                 cont = std::move(cont)](auto v) mutable {
+            Requester::Response resp;
+            resp = std::move(v.response());
+            if (isAggregatedCollection(req))
             {
-                nlohmann::json body = nlohmann::json::parse(results.body());
+                nlohmann::json body = nlohmann::json::parse(resp.body(),
+                                                            nullptr, false);
+                if (body.is_discarded())
+                {
+                    CLIENT_LOG_ERROR("Error: {}", "Invalid JSON");
+                    StringbodyResponse res{http::status::internal_server_error,
+                                           11};
+                    cont(VariantResponse(std::move(res)));
+                    return;
+                }
                 if (body["Members"] != nullptr)
                 {
-                    mergeWithAggregated(*stringRequest, body);
+                    mergeWithAggregated(req, std::move(resp), std::move(body),
+                                        std::move(cont));
+                    return;
                 }
-
-                results.body() = body.dump(2);
             }
-            CLIENT_LOG_INFO("Response: {}", results.body());
+            resp.prepare_payload();
+            cont(VariantResponse(std::move(resp)));
         });
-        results.prepare_payload();
-        return results;
     }
 };
 
