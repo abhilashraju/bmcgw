@@ -1,21 +1,10 @@
 #include "command_line_parser.hpp"
-
-#include <boost/asio.hpp>
-#include <boost/asio/spawn.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/beast/core.hpp>
+#include "tcp_client.hpp"
 
 #include <fstream>
 #include <iostream>
-namespace net = boost::asio;
-namespace beast = boost::beast;
-using net::awaitable;
-using net::co_spawn;
-using net::detached;
-using net::use_awaitable;
-using net::ip::tcp;
-namespace ssl = net::ssl;
-using ssl::stream;
+namespace bmcgw
+{
 struct Session
 {
     net::io_context io_context;
@@ -103,15 +92,7 @@ struct Session
     {
         io_context.run();
     }
-    bool checkFailed(beast::error_code& ec)
-    {
-        if (ec)
-        {
-            std::cout << ec.message() << "\n";
-            return true;
-        }
-        return false;
-    }
+
     void applyDirectoryChanges(const std::filesystem::path& path)
     {
         if (std::filesystem::is_directory(path))
@@ -131,55 +112,38 @@ struct Session
             return;
         }
 
-        tcp::resolver resolver(io_context);
-        ssl::context ssl_context(ssl::context::sslv23_client);
-
-        stream<tcp::socket> socket(io_context, ssl_context);
-        beast::error_code ec{};
-        auto endpoints = resolver.async_resolve("localhost", port, yield[ec]);
-        if (checkFailed(ec))
-        {
-            return;
-        }
-        net::async_connect(socket.next_layer(), endpoints, yield[ec]);
-        if (checkFailed(ec))
-        {
-            return;
-        }
-        socket.async_handshake(ssl::stream_base::client, yield[ec]);
-        if (checkFailed(ec))
-        {
-            return;
-        }
         std::ifstream file(file_path, std::ios::binary);
         if (!file)
         {
             std::cerr << "Failed to open file: " << file_path << std::endl;
             return;
         }
-
-        std::string request = std::format("filename: {}\r\n\r\n", file_path);
-        net::async_write(socket, net::buffer(request), yield[ec]);
-        if (checkFailed(ec))
+        ssl::context ssl_context(ssl::context::sslv23_client);
+        TcpClient client(io_context, ssl_context);
+        if (!client.connect("localhost", port, yield))
+        {
+            return;
+        }
+        std::string request = std::format("Filename: {}\r\n\r\n", file_path);
+        if (!client.send(request, yield))
         {
             return;
         }
         char buffer[1024];
         while (file.read(buffer, sizeof(buffer)) || file.gcount() > 0)
         {
-            net::async_write(socket, net::buffer(buffer, file.gcount()),
-                             yield[ec]);
-            std::cout << "Bytes sent: " << file.gcount() << "\n";
-            if (checkFailed(ec))
+            if (!client.send(std::string_view(buffer, file.gcount()), yield))
             {
                 return;
             }
+            std::cout << "Bytes sent: " << file.gcount() << "\n";
         }
 
         std::cout << "File uploaded successfully.\n";
     }
 };
-
+} // namespace bmcgw
+using namespace bmcgw;
 int main(int argc, const char* argv[])
 {
     auto [port, file, interval] =

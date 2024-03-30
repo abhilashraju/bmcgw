@@ -1,6 +1,7 @@
 #include "asyncserver.hpp"
 #include "command_line_parser.hpp"
 #include "file_handler.hpp"
+#include "sync.hpp"
 
 #include <utilities.hpp>
 
@@ -25,7 +26,7 @@ int main(int argc, const char* argv[])
     }
     try
     {
-        FileHandler handler;
+        SyncHandler handler;
 #ifdef SSL_ON
         AsyncSslServer<decltype(handler)> server(
             handler, port,
