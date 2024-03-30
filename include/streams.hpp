@@ -24,24 +24,7 @@ struct TCPStreamMaker
         SocketStreamReader() {}
         SocketStreamReader(const SocketStreamReader&) = delete;
         SocketStreamReader(SocketStreamReader&&) = default;
-        // SocketStreamReader(tcp::socket&& s) : stream(std::move(s)) {}
-        auto read(beast::error_code& ec)
-        {
-            beast::flat_buffer buffer;
-            StringbodyRequest request;
-            http::read(stream_, buffer, request, ec);
-            return VariantRequest{std::move(request)};
-        }
-        auto read()
-        {
-            beast::error_code ec{};
-            auto ret = read(ec);
-            if (ec)
-            {
-                throw std::runtime_error(ec.message());
-            }
-            return ret;
-        }
+
         void close(beast::error_code& ec)
         {
             stream_.close();
@@ -51,13 +34,7 @@ struct TCPStreamMaker
             return stream_;
         }
     };
-    SocketStreamReader acceptConnection(net::io_context& ioContext,
-                                        tcp::acceptor& acceptor)
-    {
-        SocketStreamReader reader;
-        acceptor.accept(reader.stream());
-        return reader;
-    }
+
     void acceptAsyncConnection(net::io_context& ioContext,
                                tcp::acceptor& acceptor, auto work)
     {

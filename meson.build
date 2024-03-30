@@ -1,5 +1,5 @@
 project(
-  'bmcgw',
+  'bmcutility',
   'cpp',
   version: '0.1',
   meson_version: '>=0.58.0',
@@ -21,16 +21,10 @@ reactor=subproject('reactor')
 reactor_dep=reactor.get_variable('reactor_dep')
 
 core_includes = include_directories(['./include'])
-bmcgw_sources = [
-    'src/bmcgw.cpp'
-]
 
-
-bmcgw = executable('bmcgw', 
-    [bmcgw_sources], 
-    include_directories : core_includes,
-    dependencies : [reactor_dep], 
-    )
+subdir('bmcgw')
+subdir('filesync')
+subdir('fileuploader')
 
 
 
