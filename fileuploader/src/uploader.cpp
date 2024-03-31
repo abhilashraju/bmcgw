@@ -126,11 +126,13 @@ struct Session
         TcpClient client(io_context, ssl_context);
         if (!client.connect(server, port, yield))
         {
+            std::cerr << std::format("Failed to connect {}:{}", server, port);
             return;
         }
         std::string request = std::format("Filename: {}\r\n\r\n", file_path);
         if (!client.send(request, yield))
         {
+            std::cerr << std::format("Failed to send {}", file_path);
             return;
         }
         char buffer[1024];
