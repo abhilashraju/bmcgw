@@ -12,6 +12,7 @@ struct Session
     std::chrono::seconds interval{10};
     net::steady_timer timer{io_context, interval};
     std::string port;
+    std::string server{"localhost"};
 
     struct MonitorConfigs
     {
@@ -52,8 +53,10 @@ struct Session
             std::cerr << "Exception: " << e.what() << "\n";
         }
     }
-    Session(std::string_view p, std::string_view f, int interval) :
-        interval(interval), port(p.data(), p.size())
+    Session(std::string_view s, std::string_view p, std::string_view f,
+            int interval) :
+        interval(interval),
+        server(s.data(), s.size()), port(p.data(), p.size())
     {
         addConfig(std::filesystem::path(f));
         net::spawn(&io_context, [this](net::yield_context yield) {
@@ -121,7 +124,7 @@ struct Session
         }
         ssl::context ssl_context(ssl::context::sslv23_client);
         TcpClient client(io_context, ssl_context);
-        if (!client.connect("localhost", port, yield))
+        if (!client.connect(server, port, yield))
         {
             return;
         }
@@ -147,10 +150,11 @@ struct Session
 using namespace bmcgw;
 int main(int argc, const char* argv[])
 {
-    auto [port, file, interval] =
-        bmcgw::getArgs(bmcgw::parseCommandline(argc, argv), "-p", "-f", "-i");
+    auto [port, file, interval, server] = bmcgw::getArgs(
+        bmcgw::parseCommandline(argc, argv), "-p", "-f", "-i", "-s");
 
-    Session session(port, file, interval.size() ? atoi(interval.data()) : 10);
+    Session session(server, port, file,
+                    interval.size() ? atoi(interval.data()) : 10);
 
     session.run();
 
