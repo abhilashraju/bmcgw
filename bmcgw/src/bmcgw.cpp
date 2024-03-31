@@ -27,7 +27,7 @@ int main(int argc, const char* argv[])
     }
     try
     {
-        std::ifstream file(conffile);
+        std::ifstream file(std::string{conffile.data(), conffile.size()});
         if (!file.is_open())
         {
             std::cout << "Invalid config file\n";
