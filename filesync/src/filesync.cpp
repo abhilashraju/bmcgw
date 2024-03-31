@@ -29,10 +29,8 @@ int main(int argc, const char* argv[])
         SyncHandler handler;
 #ifdef SSL_ON
         AsyncSslServer<decltype(handler)> server(
-            handler, port,
-            "/Users/abhilashraju/work/cpp/chai/certs/server-certificate.pem",
-            "/Users/abhilashraju/work/cpp/chai/certs/server-private-key.pem",
-            "/etc/ssl/certs/authority");
+            handler, port, "/home/root/server.pem", "/home/root/server.pem",
+            "/etc/ssl/certs/https/");
 #else
 
 #endif
