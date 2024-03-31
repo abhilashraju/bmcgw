@@ -96,8 +96,8 @@ struct Requester
     template <typename Contiuation>
     void forward(Client::Session::Request req, Contiuation&& cont)
     {
-        CLIENT_LOG_INFO("Forwarding to: {} with token {}", machine,
-                        req["X-Auth-Token"]);
+        // CLIENT_LOG_INFO("Forwarding to: {} with token {}", machine,
+        //                 req["X-Auth-Token"]);
         req.set(http::field::host, machine);
         auto mono =
             Client::builder()
