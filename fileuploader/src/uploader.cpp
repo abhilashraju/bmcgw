@@ -1,6 +1,7 @@
 #include "command_line_parser.hpp"
 #include "tcp_client.hpp"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 namespace bmcgw
