@@ -8,7 +8,7 @@ namespace bmcgw
 struct FileParser : Parser
 {
     std::ofstream file;
-    std::string root{"root"};
+    std::string root{""};
     FileParser() {}
     bool makeDirectories(std::filesystem::path dirs)
     {
