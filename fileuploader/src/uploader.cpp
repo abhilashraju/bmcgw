@@ -41,16 +41,20 @@ struct Session
             return;
         }
     }
-    void executeGuarded(auto&& func)
+    void executeGuarded(auto&& func, net::yield_context yield)
     {
         try
         {
-            func();
+            func(yield);
         }
 
         catch (std::exception& e)
         {
             std::cerr << "Exception: " << e.what() << "\n";
+            net::spawn(&io_context, [this, func = std::move(func)](
+                                        net::yield_context yield) {
+                executeGuarded(std::move(func), yield);
+            });
         }
     }
     Session(std::string_view s, std::string_view p, std::string_view f,
@@ -60,8 +64,8 @@ struct Session
     {
         addConfig(std::filesystem::path(f));
         net::spawn(&io_context, [this](net::yield_context yield) {
-            executeGuarded(
-                std::bind_front(&Session::monitorFiles, this, yield));
+            executeGuarded(std::bind_front(&Session::monitorFiles, this),
+                           yield);
         });
     }
     void monitorFiles(net::yield_context yield)
@@ -84,7 +88,8 @@ struct Session
                 net::spawn(&io_context,
                            [this, config](net::yield_context yield) {
                     executeGuarded(std::bind_front(&Session::upload_file, this,
-                                                   config.filePath, yield));
+                                                   config.filePath),
+                                   yield);
                 });
             }
         }
