@@ -17,7 +17,8 @@ using namespace bmcgw;
 int main(int argc, const char* argv[])
 {
     // Create a server endpoint
-    auto [port] = getArgs(parseCommandline(argc, argv), "-p");
+    auto [port, cert, pkey] = getArgs(parseCommandline(argc, argv), "-p",
+                                      "-cert", "-pkey");
     if (port.empty())
     {
         std::cout << "Invalid arguments\n";
@@ -29,8 +30,7 @@ int main(int argc, const char* argv[])
         SyncHandler handler;
 #ifdef SSL_ON
         AsyncSslServer<decltype(handler)> server(
-            handler, port, "/etc/ssl/certs/https/server.pem",
-            "/etc/ssl/certs/https/privkey.pem", "/etc/ssl/certs/https/");
+            handler, port, cert.data(), pkey.data(), "/etc/ssl/certs/https/");
 #else
 
 #endif
