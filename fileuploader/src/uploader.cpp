@@ -94,8 +94,10 @@ struct Session
             }
         }
 
-        net::spawn(&io_context,
-                   [this](net::yield_context yield) { monitorFiles(yield); });
+        net::spawn(&io_context, [this](net::yield_context yield) {
+            executeGuarded(std::bind_front(&Session::monitorFiles, this),
+                           yield);
+        });
     }
     void run()
     {
