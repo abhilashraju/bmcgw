@@ -38,10 +38,9 @@ template <typename Handler>
 struct AsyncSslServer : AsyncServer<SslStreamMaker, Handler>
 {
     using Base = AsyncServer<SslStreamMaker, Handler>;
-    AsyncSslServer(Handler& handler, std::string_view port,
-                   const char* serverCert, const char* serverPkey,
-                   const char* trustStore) :
-        Base(handler, port, SslStreamMaker(serverCert, serverPkey, trustStore))
+    AsyncSslServer(Handler& handler, const std::string_view port,
+                   std::string_view cirtDir) :
+        Base(handler, port, SslStreamMaker(cirtDir))
     {}
 };
 } // namespace bmcgw

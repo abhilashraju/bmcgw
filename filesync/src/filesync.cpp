@@ -10,15 +10,14 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-constexpr const char* trustStorePath = "/etc/ssl/certs/authority";
+
 constexpr const char* x509Comment = "Generated from OpenBMC service";
 using namespace bmcgw;
 
 int main(int argc, const char* argv[])
 {
     // Create a server endpoint
-    auto [port, cert, pkey] = getArgs(parseCommandline(argc, argv), "-p",
-                                      "-cert", "-pkey");
+    auto [port, cert] = getArgs(parseCommandline(argc, argv), "-p", "-certdir");
     if (port.empty())
     {
         std::cout << "Invalid arguments\n";
@@ -29,8 +28,7 @@ int main(int argc, const char* argv[])
     {
         SyncHandler handler;
 #ifdef SSL_ON
-        AsyncSslServer<decltype(handler)> server(
-            handler, port, cert.data(), pkey.data(), "/etc/ssl/certs/https/");
+        AsyncSslServer<decltype(handler)> server(handler, port, cert.data());
 #else
 
 #endif

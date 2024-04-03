@@ -2,7 +2,7 @@
 // #include "chai_concepts.hpp"
 #include "common_defs.hpp"
 // #include "handle_error.hpp"
-#include "ssl_stream_maker.hpp"
+#include "ssl_utils.hpp"
 namespace bmcgw
 {
 inline auto checkFailed(beast::error_code& ec)
@@ -84,9 +84,8 @@ struct SslStreamMaker
         }
     };
     ssl::context sslContext;
-    SslStreamMaker(const char* pemFile, const char* privKey,
-                   const char* certsDirectory) :
-        sslContext(getSslServerContext(pemFile, privKey, certsDirectory))
+    SslStreamMaker(std::string_view cirtDir) :
+        sslContext(ensuressl::loadCertificate({cirtDir.data(), cirtDir.size()}))
     {}
 
     void acceptAsyncConnection(net::io_context& ioContext,

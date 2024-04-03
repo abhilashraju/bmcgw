@@ -18,11 +18,13 @@ using namespace bmcgw;
 int main(int argc, const char* argv[])
 {
     // Create a server endpoint
-    auto [port, conffile] = getArgs(parseCommandline(argc, argv), "-p", "-c");
-    if (port.empty() || conffile.empty())
+    auto [port, conffile, certDir] = getArgs(parseCommandline(argc, argv), "-p",
+                                             "-c", "-certdir");
+    if (port.empty() || conffile.empty() || certDir.empty())
     {
         std::cout << "Invalid arguments\n";
-        std::cout << "eg: bmcgw -p port -c config path\n";
+        std::cout
+            << "eg: bmcgw -p port -c config path , -certdir dir-of-ss-cirt\n";
         return 0;
     }
     try
@@ -38,9 +40,7 @@ int main(int argc, const char* argv[])
         Aggregator aggregator(conf);
         HttpHandler handler(aggregator);
 #ifdef SSL_ON
-        AsyncSslServer<decltype(handler)> server(
-            handler, port, "/home/root/server.pem", "/home/root/private.pem",
-            "/etc/ssl/certs/https/");
+        AsyncSslServer<decltype(handler)> server(handler, port, certDir);
 #else
 
 #endif
