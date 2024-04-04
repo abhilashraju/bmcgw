@@ -5,11 +5,11 @@
 
 #include <fstream>
 #include <iostream>
-using namespace bmcgw;
+using namespace reactor;
 int main(int argc, const char* argv[])
 {
-    auto [server, p, user, ps] = bmcgw::getArgs(
-        bmcgw::parseCommandline(argc, argv), "-s", "-p", "-u", "-ps");
+    auto [server, p, user, ps] = getArgs(parseCommandline(argc, argv), "-s",
+                                         "-p", "-u", "-ps");
 
     net::io_context io_context;
     ssl::context ssl_context(ssl::context::sslv23_client);

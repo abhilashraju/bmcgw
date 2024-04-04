@@ -3,7 +3,7 @@
 
 #include <filesystem>
 #include <fstream>
-namespace bmcgw
+namespace reactor
 {
 struct FileParser : Parser
 {
@@ -50,4 +50,4 @@ struct FileParser : Parser
         return false;
     }
 };
-} // namespace bmcgw
+} // namespace reactor

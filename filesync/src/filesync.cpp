@@ -12,16 +12,16 @@
 #include <iostream>
 
 constexpr const char* x509Comment = "Generated from OpenBMC service";
-using namespace bmcgw;
+using namespace reactor;
 
 int main(int argc, const char* argv[])
 {
     // Create a server endpoint
     auto [port, cert] = getArgs(parseCommandline(argc, argv), "-p", "-certdir");
-    if (port.empty())
+    if (port.empty() || cert.empty())
     {
         std::cout << "Invalid arguments\n";
-        std::cout << "eg: bmcfilesync -p port \n";
+        std::cout << "eg: bmcfilesync -p port -certdir dirpath \n";
         return 0;
     }
     try

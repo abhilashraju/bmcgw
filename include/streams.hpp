@@ -3,7 +3,7 @@
 #include "common_defs.hpp"
 // #include "handle_error.hpp"
 #include "ssl_utils.hpp"
-namespace bmcgw
+namespace reactor
 {
 inline auto checkFailed(beast::error_code& ec)
 {
@@ -120,4 +120,4 @@ struct SslStreamMaker
 };
 
 #endif
-} // namespace bmcgw
+} // namespace reactor

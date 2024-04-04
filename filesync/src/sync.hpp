@@ -1,7 +1,7 @@
 #pragma once
 #include "auth_handler.hpp"
 #include "parser_collections.hpp"
-namespace bmcgw
+namespace reactor
 {
 class SyncHandler
 {
@@ -56,4 +56,4 @@ class SyncHandler
         session->doRead(yield);
     }
 };
-} // namespace bmcgw
+} // namespace reactor

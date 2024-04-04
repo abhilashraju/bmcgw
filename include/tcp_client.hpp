@@ -1,25 +1,19 @@
 #pragma once
+#include "beast_defs.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core.hpp>
 
 #include <iostream>
-namespace bmcgw
+namespace reactor
 {
-namespace net = boost::asio;
-namespace beast = boost::beast;
-using net::awaitable;
-using net::co_spawn;
-using net::detached;
-using net::use_awaitable;
-using net::ip::tcp;
-namespace ssl = net::ssl;
-using ssl::stream;
+
 struct TcpClient
 {
     tcp::resolver resolver;
-    stream<tcp::socket> socket;
+    ssl::stream<tcp::socket> socket;
     TcpClient(net::io_context& ioc, ssl::context& ctx) :
         resolver(ioc), socket(ioc, ctx)
     {}
@@ -64,4 +58,4 @@ struct TcpClient
         return false;
     }
 };
-} // namespace bmcgw
+} // namespace reactor

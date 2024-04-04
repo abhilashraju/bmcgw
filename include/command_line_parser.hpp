@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
-namespace bmcgw
+namespace reactor
 {
 inline auto parseCommandline(int argc, const char* argv[])
 {
@@ -35,4 +35,4 @@ inline auto getArgs(const auto& commLine, Args... args)
     };
     return std::make_tuple((extact(args))...);
 }
-} // namespace bmcgw
+} // namespace reactor

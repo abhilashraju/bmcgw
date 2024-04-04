@@ -6,7 +6,7 @@
 #ifdef SSL_ON
 namespace ensuressl
 {
-using namespace bmcgw;
+using namespace reactor;
 static constexpr std::string_view trustStorePath{"/etc/ssl/certs/authority"};
 
 constexpr const char* x509Comment = "Generated from OpenBMC service";

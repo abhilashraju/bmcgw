@@ -2,7 +2,7 @@
 #include "parser.hpp"
 
 #include <nlohmann/json.hpp>
-namespace bmcgw
+namespace reactor
 {
 struct AuthParser : Parser
 {
@@ -25,4 +25,4 @@ struct AuthParser : Parser
         return true;
     }
 };
-} // namespace bmcgw
+} // namespace reactor

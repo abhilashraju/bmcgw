@@ -3,7 +3,7 @@
 
 #include <boost/beast/core/detail/base64.hpp>
 
-namespace bmcgw
+namespace reactor
 {
 struct base64_file_body
 {
@@ -58,4 +58,4 @@ class base64_file_body::writer : public http::file_body::writer
         return {{const_buffers_type{buf_, enclength}, ret.get().second}};
     }
 };
-} // namespace bmcgw
+} // namespace reactor

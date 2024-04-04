@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-namespace bmcgw
+namespace reactor
 {
 
 struct Parser
@@ -69,4 +69,4 @@ struct Parser
         return true;
     }
 };
-} // namespace bmcgw
+} // namespace reactor

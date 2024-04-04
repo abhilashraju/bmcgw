@@ -1,5 +1,5 @@
 #pragma once
-namespace bmcgw
+namespace reactor
 {
 struct ParserCollections : Parser
 {
@@ -32,4 +32,4 @@ struct ParserCollections : Parser
     }
 };
 
-} // namespace bmcgw
+} // namespace reactor

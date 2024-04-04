@@ -11,7 +11,7 @@
 #include "base64_file_body.hpp"
 
 #include <boost/beast/version.hpp>
-namespace bmcgw
+namespace reactor
 {
 
 using FilebodyBase64Response = http::response<base64_file_body>;
@@ -80,4 +80,4 @@ struct CopyableMoveWrapper
         return mv;
     }
 };
-} // namespace bmcgw
+} // namespace reactor

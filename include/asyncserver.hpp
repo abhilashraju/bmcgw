@@ -1,6 +1,6 @@
 
 #include "streams.hpp"
-namespace bmcgw
+namespace reactor
 {
 
 template <typename StreamMaker, typename Handler>
@@ -43,4 +43,4 @@ struct AsyncSslServer : AsyncServer<SslStreamMaker, Handler>
         Base(handler, port, SslStreamMaker(cirtDir))
     {}
 };
-} // namespace bmcgw
+} // namespace reactor
