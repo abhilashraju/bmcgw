@@ -24,7 +24,7 @@ core_includes = include_directories(['./include'])
 
 subdir('bmcgw')
 subdir('filesync')
-subdir('fileuploader')
+#subdir('fileuploader')
 subdir('credcopier')
 
 

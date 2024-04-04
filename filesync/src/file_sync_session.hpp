@@ -1,5 +1,6 @@
 #pragma once
 #include "beast_defs.hpp"
+#include "syncdb.hpp"
 #include "tcp_client.hpp"
 
 #include <nlohmann/json.hpp>
@@ -16,33 +17,6 @@ struct FileSyncSession
     std::string port;
     std::string server{"localhost"};
 
-    struct MonitorConfigs
-    {
-        std::filesystem::file_time_type lastWriteTime;
-        std::filesystem::path filePath;
-    };
-    std::vector<MonitorConfigs> monitorConfigs;
-    void addConfig(std::filesystem::path filePath)
-    {
-        auto iter = std::ranges::find_if(monitorConfigs, [&filePath](auto& v) {
-            return v.filePath == filePath;
-        });
-        if (iter == std::end(monitorConfigs))
-        {
-            monitorConfigs.push_back(
-                {std::filesystem::file_time_type{}, filePath});
-        }
-
-        if (std::filesystem::is_directory(filePath))
-        {
-            std::filesystem::directory_iterator dir(filePath);
-            for (auto& file : dir)
-            {
-                addConfig(file.path());
-            }
-            return;
-        }
-    }
     void executeGuarded(auto&& func, net::yield_context yield)
     {
         try
@@ -65,10 +39,11 @@ struct FileSyncSession
         interval = std::chrono::seconds{j["interval"]};
         server = j["server"];
         port = j["port"];
-        for (auto& file : j["paths"])
-        {
-            addConfig(file);
-        }
+        std::vector<std::string> paths;
+        std::ranges::transform(
+            j["paths"], std::back_inserter(paths),
+            [](const auto& path) { return std::string{path}; });
+        SyncDb::globalSyncDb().addPaths(paths);
         net::spawn(&io_context, [this](net::yield_context yield) {
             executeGuarded(
                 std::bind_front(&FileSyncSession::monitorFiles, this), yield);
@@ -85,22 +60,14 @@ struct FileSyncSession
             std::cout << ec.message() << "\n";
             return;
         }
-        for (auto& config : monitorConfigs)
-        {
-            auto currentWriteTime =
-                std::filesystem::last_write_time(config.filePath);
-            if (currentWriteTime != config.lastWriteTime)
-            {
-                config.lastWriteTime = currentWriteTime;
-                net::spawn(&io_context,
-                           [this, config](net::yield_context yield) {
-                    executeGuarded(
-                        std::bind_front(&FileSyncSession::upload_file, this,
-                                        config.filePath),
-                        yield);
-                });
-            }
-        }
+        SyncDb::globalSyncDb().checkChanges([this](auto&& path) {
+            net::spawn(&io_context, [this, path = std::move(path)](
+                                        net::yield_context yield) {
+                executeGuarded(std::bind_front(&FileSyncSession::upload_file,
+                                               this, std::move(path)),
+                               yield);
+            });
+        });
 
         net::spawn(&io_context, [this](net::yield_context yield) {
             executeGuarded(
@@ -112,22 +79,11 @@ struct FileSyncSession
         io_context.run();
     }
 
-    void applyDirectoryChanges(const std::filesystem::path& path)
-    {
-        if (std::filesystem::is_directory(path))
-        {
-            std::filesystem::directory_iterator dir(path);
-            for (auto& file : dir)
-            {
-                addConfig(file.path());
-            }
-        }
-    }
     void upload_file(const std::string& file_path, net::yield_context yield)
     {
         if (std::filesystem::is_directory(file_path))
         {
-            applyDirectoryChanges(file_path);
+            SyncDb::globalSyncDb().applyDirectoryChanges(file_path);
             return;
         }
 
