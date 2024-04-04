@@ -10,7 +10,7 @@ struct FileParser : Parser
 {
     std::ofstream file;
     std::filesystem::path path;
-    std::string root{"root"};
+    std::string root{""};
     FileParser() {}
     bool makeDirectories(std::filesystem::path dirs)
     {

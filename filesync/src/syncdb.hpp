@@ -41,6 +41,10 @@ struct SyncDb
     {
         for (auto& config : monitorConfigs)
         {
+            if (!std::filesystem::exists(config.filePath))
+            {
+                continue;
+            }
             auto currentWriteTime =
                 std::filesystem::last_write_time(config.filePath);
             if (currentWriteTime != config.lastWriteTime)
