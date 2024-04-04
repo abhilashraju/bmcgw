@@ -2,11 +2,13 @@
 #include "beast_defs.hpp"
 #include "tcp_client.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <filesystem>
 #include <fstream>
 namespace reactor
 {
-struct Session
+struct FileSyncSession
 {
     net::io_context& io_context;
     std::chrono::seconds interval{10};
@@ -57,17 +59,22 @@ struct Session
             });
         }
     }
-    Session(net::io_context& ctx, std::string_view s, std::string_view p,
-            std::string_view f, int interval) :
-        io_context(ctx),
-        interval(interval), server(s.data(), s.size()), port(p.data(), p.size())
+    FileSyncSession(net::io_context& ctx, const nlohmann::json& j) :
+        io_context(ctx)
     {
-        addConfig(std::filesystem::path(f));
+        interval = std::chrono::seconds{j["interval"]};
+        server = j["server"];
+        port = j["port"];
+        for (auto& file : j["paths"])
+        {
+            addConfig(file);
+        }
         net::spawn(&io_context, [this](net::yield_context yield) {
-            executeGuarded(std::bind_front(&Session::monitorFiles, this),
-                           yield);
+            executeGuarded(
+                std::bind_front(&FileSyncSession::monitorFiles, this), yield);
         });
     }
+
     void monitorFiles(net::yield_context yield)
     {
         timer.expires_after(interval);
@@ -87,16 +94,17 @@ struct Session
                 config.lastWriteTime = currentWriteTime;
                 net::spawn(&io_context,
                            [this, config](net::yield_context yield) {
-                    executeGuarded(std::bind_front(&Session::upload_file, this,
-                                                   config.filePath),
-                                   yield);
+                    executeGuarded(
+                        std::bind_front(&FileSyncSession::upload_file, this,
+                                        config.filePath),
+                        yield);
                 });
             }
         }
 
         net::spawn(&io_context, [this](net::yield_context yield) {
-            executeGuarded(std::bind_front(&Session::monitorFiles, this),
-                           yield);
+            executeGuarded(
+                std::bind_front(&FileSyncSession::monitorFiles, this), yield);
         });
     }
     void run()

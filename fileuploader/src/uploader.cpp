@@ -6,12 +6,19 @@
 using namespace reactor;
 int main(int argc, const char* argv[])
 {
-    auto [port, file, interval, server] = getArgs(parseCommandline(argc, argv),
-                                                  "-p", "-f", "-i", "-s");
+    auto [port, conf] = getArgs(parseCommandline(argc, argv), "-p", "-c");
 
     net::io_context io_context;
-    Session session(io_context, server, port, file,
-                    interval.size() ? atoi(interval.data()) : 10);
+    std::ifstream file(std::string{conf.data(), conf.size()});
+    if (!file.is_open())
+    {
+        std::cout << "Invalid config file\n";
+        return 0;
+    }
+    std::string confStr((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+    nlohmann::json j = nlohmann::json::parse(confStr);
+    FileSyncSession session(io_context, j);
 
     session.run();
 

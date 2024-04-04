@@ -32,6 +32,10 @@ struct AsyncServer
         streamMaker.acceptAsyncConnection(ioc_, acceptor_,
                                           std::move(asyncWork));
     }
+    net::io_context& getIoContext()
+    {
+        return ioc_;
+    }
 };
 
 template <typename Handler>
