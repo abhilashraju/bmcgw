@@ -15,6 +15,10 @@ struct SyncDb
         {
             monitorConfigs.push_back({time, filePath});
         }
+        else
+        {
+            iter->lastWriteTime = time;
+        }
 
         if (std::filesystem::is_directory(filePath))
         {

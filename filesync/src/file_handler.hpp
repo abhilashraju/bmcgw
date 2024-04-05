@@ -17,8 +17,9 @@ struct FileParser : Parser
         if (!std::filesystem::exists(dirs))
         {
             bool ret = std::filesystem::create_directories(dirs);
-            SyncDb::globalSyncDb().addConfig(
-                dirs, std::filesystem::last_write_time(dirs));
+            auto lastWriteTime = std::filesystem::last_write_time(dirs);
+            REACTOR_LOG_DEBUG("File written at: {}", lastWriteTime);
+            SyncDb::globalSyncDb().addConfig(dirs, lastWriteTime);
             return ret;
         }
         return true;
@@ -50,8 +51,9 @@ struct FileParser : Parser
         if (file.is_open())
         {
             file.write(data.data(), data.size());
-            SyncDb::globalSyncDb().addConfig(
-                path, std::filesystem::last_write_time(path));
+            auto lastWriteTime = std::filesystem::last_write_time(path);
+            SyncDb::globalSyncDb().addConfig(path, lastWriteTime);
+            REACTOR_LOG_DEBUG("File written at: {}", lastWriteTime);
             return true;
         }
         return false;
