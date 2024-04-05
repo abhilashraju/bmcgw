@@ -43,6 +43,8 @@ struct SyncDb
         {
             if (!std::filesystem::exists(config.filePath))
             {
+                REACTOR_LOG_DEBUG("File does not exist: {}",
+                                  config.filePath.string());
                 continue;
             }
             auto currentWriteTime =

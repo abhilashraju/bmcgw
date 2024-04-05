@@ -60,7 +60,7 @@ struct FileSyncSession
             std::cout << ec.message() << "\n";
             return;
         }
-        SyncDb::globalSyncDb().checkChanges([this](auto&& path) {
+        SyncDb::globalSyncDb().checkChanges([this](auto path) {
             net::spawn(&io_context, [this, path = std::move(path)](
                                         net::yield_context yield) {
                 executeGuarded(std::bind_front(&FileSyncSession::upload_file,
