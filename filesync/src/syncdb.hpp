@@ -4,15 +4,16 @@ namespace reactor
 {
 struct SyncDb
 {
-    void addConfig(std::filesystem::path filePath)
+    void addConfig(std::filesystem::path filePath,
+                   std::filesystem::file_time_type time =
+                       std::filesystem::file_time_type{})
     {
         auto iter = std::ranges::find_if(monitorConfigs, [&filePath](auto& v) {
             return v.filePath == filePath;
         });
         if (iter == std::end(monitorConfigs))
         {
-            monitorConfigs.push_back(
-                {std::filesystem::file_time_type{}, filePath});
+            monitorConfigs.push_back({time, filePath});
         }
 
         if (std::filesystem::is_directory(filePath))
@@ -20,11 +21,11 @@ struct SyncDb
             std::filesystem::directory_iterator dir(filePath);
             for (auto& file : dir)
             {
-                addConfig(file.path());
+                addConfig(file.path(), time);
             }
-            return;
         }
     }
+
     void applyDirectoryChanges(const std::filesystem::path& path)
     {
         if (std::filesystem::is_directory(path))

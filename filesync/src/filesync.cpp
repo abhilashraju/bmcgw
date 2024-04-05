@@ -22,8 +22,9 @@ int main(int argc, const char* argv[])
                                       "-certdir", "-c");
     if (port.empty() || cert.empty() || conf.empty())
     {
-        std::cout << "Invalid arguments\n";
-        std::cout << "eg: bmcfilesync -p port -certdir dirpath -c configfile\n";
+        REACTOR_LOG_ERROR("Invalid arguments");
+        REACTOR_LOG_ERROR(
+            "eg: bmcfilesync -p port -certdir dirpath -c configfile");
         return 0;
     }
     try
@@ -37,7 +38,7 @@ int main(int argc, const char* argv[])
         std::ifstream file(std::string{conf.data(), conf.size()});
         if (!file.is_open())
         {
-            std::cout << "Invalid config file\n";
+            REACTOR_LOG_ERROR("Invalid config file");
             return 0;
         }
         std::string confStr((std::istreambuf_iterator<char>(file)),
@@ -49,7 +50,7 @@ int main(int argc, const char* argv[])
     }
     catch (const std::exception& e)
     {
-        std::cout << e.what() << '\n';
+        REACTOR_LOG_ERROR("Exception: {}", e.what());
     }
 
     return 0;

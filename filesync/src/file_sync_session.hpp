@@ -57,7 +57,7 @@ struct FileSyncSession
         timer.async_wait(yield[ec]);
         if (ec)
         {
-            std::cout << ec.message() << "\n";
+            REACTOR_LOG_DEBUG("Timer error: {}", ec.message());
             return;
         }
         SyncDb::globalSyncDb().checkChanges([this](auto path) {
@@ -90,20 +90,20 @@ struct FileSyncSession
         std::ifstream file(file_path, std::ios::binary);
         if (!file)
         {
-            std::cerr << "Failed to open file: " << file_path << std::endl;
+            REACTOR_LOG_DEBUG("Failed to open file: {}", file_path);
             return;
         }
         ssl::context ssl_context(ssl::context::sslv23_client);
         TcpClient client(io_context, ssl_context);
         if (!client.connect(server, port, yield))
         {
-            std::cerr << std::format("Failed to connect {}:{}", server, port);
+            REACTOR_LOG_DEBUG("Failed to connect {}:{}", server, port);
             return;
         }
         std::string request = std::format("Filename: {}\r\n\r\n", file_path);
         if (!client.send(request, yield))
         {
-            std::cerr << std::format("Failed to send {}", file_path);
+            REACTOR_LOG_DEBUG("Failed to send {}", file_path);
             return;
         }
         char buffer[1024];
@@ -113,10 +113,8 @@ struct FileSyncSession
             {
                 return;
             }
-            std::cout << "Bytes sent: " << file.gcount() << "\n";
         }
-
-        std::cout << "File uploaded successfully.\n";
+        REACTOR_LOG_DEBUG("File {} uploaded successfully", file_path);
     }
 };
 } // namespace reactor
