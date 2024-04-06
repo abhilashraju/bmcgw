@@ -29,6 +29,7 @@ int main(int argc, const char* argv[])
     }
     try
     {
+        reactor::getLogger().setLogLevel(LogLevel::ERROR);
         std::ifstream file(std::string{conffile.data(), conffile.size()});
         if (!file.is_open())
         {

@@ -29,12 +29,14 @@ int main(int argc, const char* argv[])
     }
     try
     {
+        reactor::getLogger().setLogLevel(LogLevel::ERROR);
         SyncHandler handler;
 #ifdef SSL_ON
         AsyncSslServer<decltype(handler)> server(handler, port, cert.data());
 #else
 
 #endif
+
         std::ifstream file(std::string{conf.data(), conf.size()});
         if (!file.is_open())
         {
