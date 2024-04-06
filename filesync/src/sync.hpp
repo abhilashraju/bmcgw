@@ -27,7 +27,7 @@ class SyncHandler
                 net::buffer(data_, max_length), yield[ec]);
             if (ec)
             {
-                std::cout << ec.message() << "\n";
+                REACTOR_LOG_INFO("Error reading: {}", ec.message());
                 return;
             }
             doWrite(length, yield);
