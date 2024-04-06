@@ -63,7 +63,7 @@ struct Parser
         }
         catch (const std::exception& e)
         {
-            std::cout << e.what() << "\n";
+            REACTOR_LOG_INFO("Exception: {}", e.what());
             return false;
         }
         return true;
