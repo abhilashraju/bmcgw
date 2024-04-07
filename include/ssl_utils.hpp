@@ -10,10 +10,11 @@ using namespace reactor;
 static constexpr std::string_view trustStorePath{"/etc/ssl/certs/authority"};
 
 constexpr const char* x509Comment = "Generated from OpenBMC service";
-inline ssl::context getSslContext(const std::string& sslPemFile)
+inline ssl::context
+    getSslContext(boost::asio::ssl::context::method servorclient,
+                  const std::string& sslPemFile)
 {
-    boost::asio::ssl::context mSslContext{
-        boost::asio::ssl::context::tls_server};
+    boost::asio::ssl::context mSslContext{servorclient};
 
     mSslContext.set_options(boost::asio::ssl::context::default_workarounds |
                             boost::asio::ssl::context::no_sslv2 |
@@ -63,7 +64,30 @@ inline ssl::context getSslContext(const std::string& sslPemFile)
     }
     return mSslContext;
 }
+inline std::optional<std::string> sslGetSubjectName(X509* peerCert,
+                                                    auto&& extractor)
+{
+    std::string sslUser;
+    // Extract username contained in CommonName
+    sslUser.resize(256, '\0');
 
+    auto status = extractor(X509_get_subject_name(peerCert), sslUser.data(),
+                            sslUser.size());
+    if (status == -1)
+    {
+        REACTOR_LOG_DEBUG("TLS cannot get Subject from certificate");
+        return std::nullopt;
+    }
+
+    size_t lastChar = sslUser.find('\0');
+    if (lastChar == std::string::npos || lastChar == 0)
+    {
+        REACTOR_LOG_DEBUG("Invalid Subject Name");
+        return std::nullopt;
+    }
+    sslUser.resize(lastChar);
+    return sslUser;
+}
 inline std::optional<std::string>
     verifyMtlsUser(const boost::asio::ip::address& clientIp,
                    boost::asio::ssl::verify_context& ctx)
@@ -109,76 +133,28 @@ inline std::optional<std::string>
             "Chain does not allow certificate to be used for SSL client authentication");
         return std::nullopt;
     }
-
-    std::string sslUser;
-    // Extract username contained in CommonName
-    sslUser.resize(256, '\0');
-
-    int status = X509_NAME_get_text_by_NID(X509_get_subject_name(peerCert),
-                                           NID_commonName, sslUser.data(),
-                                           static_cast<int>(sslUser.size()));
-
-    if (status == -1)
-    {
-        REACTOR_LOG_DEBUG("TLS cannot get username ");
-        return std::nullopt;
-    }
-
-    size_t lastChar = sslUser.find('\0');
-    if (lastChar == std::string::npos || lastChar == 0)
-    {
-        REACTOR_LOG_DEBUG("Invalid TLS user name");
-        return std::nullopt;
-    }
-    sslUser.resize(lastChar);
-
-    return sslUser;
+    return sslGetSubjectName(peerCert,
+                             [](X509_NAME* name, char* buffer, size_t size) {
+        return X509_NAME_get_text_by_NID(name, NID_commonName, buffer, size);
+    });
 }
-inline bool tlsVerifyCallback(bool preverified,
-                              boost::asio::ssl::verify_context& ctx)
+void displayVarificationError(boost::asio::ssl::verify_context& ctx)
 {
-    // We always return true to allow full auth flow for resources that
-    // don't require auth
-    if (preverified)
-    {
-        boost::asio::ip::address ipAddress;
-        // if (getClientIp(ipAddress))
-        // {
-        //     return true;
-        // }
+    X509_STORE_CTX* cts = ctx.native_handle();
+    int32_t depth = X509_STORE_CTX_get_error_depth(cts);
+    int32_t err = X509_STORE_CTX_get_error(cts);
+    X509* cert = X509_STORE_CTX_get_current_cert(cts);
+    auto data =
+        sslGetSubjectName(cert, [](X509_NAME* name, char* buffer, size_t size) {
+        auto buf = X509_NAME_oneline(name, buffer, size);
+        return (buf == nullptr) ? -1 : 1;
+    });
 
-        auto mtlsSession = verifyMtlsUser(ipAddress, ctx);
-        if (mtlsSession)
-        {
-            REACTOR_LOG_DEBUG("Generating TLS USER: {}", mtlsSession.value());
-        }
-    }
-    return true;
+    REACTOR_LOG_ERROR("verify error:num={}::{}::{}::{}",
+                      X509_STORE_CTX_get_error(cts),
+                      X509_verify_cert_error_string(err), depth, data.value());
 }
-inline void prepareMutualTls(auto& adaptor, const std::string& id)
-{
-    std::error_code error;
-    std::filesystem::path caPath(ensuressl::trustStorePath);
-    auto caAvailable = !std::filesystem::is_empty(caPath, error);
-    caAvailable = caAvailable && !error;
-    if (caAvailable)
-    {
-        adaptor.set_verify_mode(boost::asio::ssl::verify_peer);
 
-        const char* cStr = id.c_str();
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        const auto* idC = reinterpret_cast<const unsigned char*>(cStr);
-        int ret =
-            SSL_set_session_id_context(adaptor.native_handle(), idC,
-                                       static_cast<unsigned int>(id.length()));
-        if (ret == 0)
-        {
-            REACTOR_LOG_ERROR("failed to set SSL id");
-        }
-    }
-
-    adaptor.set_verify_callback(tlsVerifyCallback);
-}
 struct OpenSSLGenerator
 {
     uint8_t operator()()
@@ -216,6 +192,24 @@ struct OpenSSLGenerator
     static constexpr int opensslSuccess = 1;
     bool err = false;
 };
+void write_key_to_file(EVP_PKEY* pkey, const char* filename)
+{
+    std::filesystem::path path(filename);
+    std::string keypath = path.parent_path().string() + "/key.key";
+    FILE* fp = fopen(keypath.c_str(), "w");
+    if (!fp)
+    {
+        // Handle error
+        return;
+    }
+
+    if (!PEM_write_PrivateKey(fp, pkey, NULL, NULL, 0, NULL, NULL))
+    {
+        // Handle error
+    }
+
+    fclose(fp);
+}
 inline EVP_PKEY* createEcKey()
 {
     EVP_PKEY* pKey = nullptr;
@@ -319,6 +313,7 @@ inline void generateSslCertificate(const std::string& filepath,
     EVP_PKEY* pPrivKey = createEcKey();
     if (pPrivKey != nullptr)
     {
+        write_key_to_file(pPrivKey, filepath.c_str());
         REACTOR_LOG_DEBUG("Generating x509 Certificate");
         // Use this code to directly generate a certificate
         X509* x509 = X509_new();
@@ -571,7 +566,9 @@ inline void ensureOpensslKeyPresentAndValid(const std::string& filepath)
         generateSslCertificate(filepath, "testhost");
     }
 }
-inline boost::asio::ssl::context loadCertificate(const std::string& certDir)
+inline boost::asio::ssl::context
+    loadCertificate(boost::asio::ssl::context::method servOrClient,
+                    const std::string& certDir)
 {
     namespace fs = std::filesystem;
 
@@ -587,8 +584,61 @@ inline boost::asio::ssl::context loadCertificate(const std::string& certDir)
     REACTOR_LOG_INFO("Building SSL Context file={}", certFile.string());
     std::string sslPemFile(certFile);
     ensureOpensslKeyPresentAndValid(sslPemFile);
-    boost::asio::ssl::context sslContext = getSslContext(sslPemFile);
+    boost::asio::ssl::context sslContext = getSslContext(servOrClient,
+                                                         sslPemFile);
     return sslContext;
+}
+inline bool tlsVerifyCallback(bool preverified,
+                              boost::asio::ssl::verify_context& ctx)
+{
+    // We always return true to allow full auth flow for resources that
+    // don't require auth
+    if (preverified)
+    {
+        boost::asio::ip::address ipAddress;
+        // if (getClientIp(ipAddress))
+        // {
+        //     return true;
+        // }
+
+        auto mtlsSession = verifyMtlsUser(ipAddress, ctx);
+        if (mtlsSession)
+        {
+            REACTOR_LOG_DEBUG("Generating TLS USER: {}", mtlsSession.value());
+        }
+        return true;
+    }
+
+    displayVarificationError(ctx);
+    return validateCertificate(
+        X509_STORE_CTX_get_current_cert(ctx.native_handle()));
+}
+inline void setSessionId(auto& adaptor, const std::string& id)
+{
+    const char* cStr = id.c_str();
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* idC = reinterpret_cast<const unsigned char*>(cStr);
+    int ret = SSL_set_session_id_context(
+        adaptor.native_handle(), idC, static_cast<unsigned int>(id.length()));
+    if (ret == 0)
+    {
+        REACTOR_LOG_ERROR("failed to set SSL id");
+    }
+}
+
+inline void prepareMutualTls(auto& context, std::string_view trustStorePath)
+{
+    std::error_code error;
+    std::filesystem::path caPath(trustStorePath);
+    auto caAvailable = !std::filesystem::is_empty(caPath, error);
+    caAvailable = caAvailable && !error;
+    if (caAvailable)
+    {
+        context.set_verify_mode(boost::asio::ssl::verify_peer);
+        context.add_verify_path(trustStorePath.data());
+    }
+
+    context.set_verify_callback(tlsVerifyCallback);
 }
 } // namespace ensuressl
 #endif

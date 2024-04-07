@@ -62,7 +62,8 @@ struct TCPStreamMaker
     }
 };
 #ifdef SSL_ON
-struct SslStreamMaker
+template <bool MTLS>
+struct SslStreamMakerImpl
 {
     struct SSlStreamReader
     {
@@ -84,9 +85,16 @@ struct SslStreamMaker
         }
     };
     ssl::context sslContext;
-    SslStreamMaker(std::string_view cirtDir) :
-        sslContext(ensuressl::loadCertificate({cirtDir.data(), cirtDir.size()}))
-    {}
+    SslStreamMakerImpl(std::string_view cirtDir) :
+        sslContext(
+            ensuressl::loadCertificate(boost::asio::ssl::context::tls_server,
+                                       {cirtDir.data(), cirtDir.size()}))
+    {
+        if constexpr (MTLS)
+        {
+            ensuressl::prepareMutualTls(sslContext, ensuressl::trustStorePath);
+        }
+    }
 
     void acceptAsyncConnection(net::io_context& ioContext,
                                tcp::acceptor& acceptor, auto work)
@@ -118,6 +126,7 @@ struct SslStreamMaker
         work(std::move(reader), yield);
     }
 };
-
+using SslStreamMaker = SslStreamMakerImpl<false>;
+using MtlsStreamMaker = SslStreamMakerImpl<true>;
 #endif
 } // namespace reactor

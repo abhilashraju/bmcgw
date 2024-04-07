@@ -38,13 +38,13 @@ struct AsyncServer
     }
 };
 
-template <typename Handler>
-struct AsyncSslServer : AsyncServer<SslStreamMaker, Handler>
+template <typename Handler, typename StreamMaker = SslStreamMaker>
+struct AsyncSslServer : AsyncServer<StreamMaker, Handler>
 {
-    using Base = AsyncServer<SslStreamMaker, Handler>;
+    using Base = AsyncServer<StreamMaker, Handler>;
     AsyncSslServer(Handler& handler, const std::string_view port,
                    std::string_view cirtDir) :
-        Base(handler, port, SslStreamMaker(cirtDir))
+        Base(handler, port, StreamMaker(cirtDir))
     {}
 };
 } // namespace reactor

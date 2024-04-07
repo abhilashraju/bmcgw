@@ -32,7 +32,8 @@ int main(int argc, const char* argv[])
         reactor::getLogger().setLogLevel(LogLevel::ERROR);
         SyncHandler handler;
 #ifdef SSL_ON
-        AsyncSslServer<decltype(handler)> server(handler, port, cert.data());
+        AsyncSslServer<decltype(handler), MtlsStreamMaker> server(handler, port,
+                                                                  cert.data());
 #else
 
 #endif
