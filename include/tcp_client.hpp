@@ -48,6 +48,16 @@ struct TcpClient
         }
         return true;
     }
+    bool read(auto& buffer, net::yield_context yield)
+    {
+        beast::error_code ec{};
+        net::async_read(socket, buffer, yield[ec]);
+        if (checkFailed(ec))
+        {
+            return false;
+        }
+        return true;
+    }
     bool checkFailed(beast::error_code& ec)
     {
         if (ec)

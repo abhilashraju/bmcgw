@@ -16,6 +16,8 @@ int main(int argc, const char* argv[])
     ssl::context ssl_context =
         ensuressl::loadCertificate(boost::asio::ssl::context::tls_client,
                                    {certdir.data(), certdir.size()});
+    ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
+    ssl_context.set_verify_callback(ensuressl::tlsVerifyCallback);
 
     TcpClient client(io_context, ssl_context);
 

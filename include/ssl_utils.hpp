@@ -25,7 +25,7 @@ inline ssl::context
 
     // BIG WARNING: This needs to stay disabled, as there will always be
     // unauthenticated endpoints
-    // mSslContext->set_verify_mode(boost::asio::ssl::verify_peer);
+    // mSslContext.set_verify_mode(boost::asio::ssl::verify_peer);
 
     SSL_CTX_set_options(mSslContext.native_handle(), SSL_OP_NO_RENEGOTIATION);
 
@@ -591,8 +591,6 @@ inline boost::asio::ssl::context
 inline bool tlsVerifyCallback(bool preverified,
                               boost::asio::ssl::verify_context& ctx)
 {
-    // We always return true to allow full auth flow for resources that
-    // don't require auth
     if (preverified)
     {
         boost::asio::ip::address ipAddress;
