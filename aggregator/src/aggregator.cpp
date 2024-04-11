@@ -1,4 +1,4 @@
-#include "bmcgw.hpp"
+#include "aggregator.hpp"
 
 #include "common/command_line_parser.hpp"
 #include "common/utilities.hpp"
@@ -23,7 +23,7 @@ int main(int argc, const char* argv[])
     {
         std::cout << "Invalid arguments\n";
         std::cout
-            << "eg: bmcgw -p port -c config path , -certdir dir-of-ss-cirt\n";
+            << "eg: aggregator -p port -c config path , -certdir dir-of-ss-cirt\n";
         return 0;
     }
     try

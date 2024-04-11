@@ -22,7 +22,7 @@ reactor_dep=reactor.get_variable('reactor_dep')
 
 core_includes = include_directories(['./include'])
 
-subdir('bmcgw')
+subdir('aggregator')
 subdir('filesync')
 #subdir('fileuploader')
 subdir('credcopier')
