@@ -15,7 +15,7 @@ To develop a system, with more than one satellite BMCs we would need an aggregat
 ## proposed design - phosphor-aggregator application
 1. Pull out the aggregator to be an independent application from the bmcweb
 2. Assign a dedicated port 
-3. Make it a runtime choice to start or stop the aggregation to handle failures of the BMCs inside a multi BMC system.
+3. Redfish clients can talk to any BMC. The aggregator seemlessly gather information from other BMCs.
 4. Enable mTLS & token based auth to talk to the satellite
 5. This app will do only aggregation - by acting as a proxy between redfish clients and the local/satellite bmcweb applications - this makes it a very light weight app and less error prone. 
 6. Adding a new feature in bmcweb will not have any impact on the aggregator app. 
