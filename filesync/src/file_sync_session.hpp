@@ -1,7 +1,7 @@
 #pragma once
-#include "beast_defs.hpp"
+#include "client/tcp/tcp_client.hpp"
+#include "common/beast_defs.hpp"
 #include "syncdb.hpp"
-#include "tcp_client.hpp"
 
 #include <nlohmann/json.hpp>
 

@@ -1,6 +1,6 @@
-#include "command_line_parser.hpp"
-#include "ssl_utils.hpp"
-#include "tcp_client.hpp"
+#include "client/tcp/tcp_client.hpp"
+#include "common/command_line_parser.hpp"
+#include "ssl/ssl_utils.hpp"
 
 #include <nlohmann/json.hpp>
 

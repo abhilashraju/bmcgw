@@ -1,5 +1,5 @@
 #pragma once
-#include "streams.hpp"
+#include "server/streams.hpp"
 
 namespace bmcgw
 {

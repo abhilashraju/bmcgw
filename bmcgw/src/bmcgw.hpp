@@ -1,8 +1,8 @@
 #pragma once
-#include "common_defs.hpp"
+#include "common/common_defs.hpp"
 // #include "http_errors.hpp"
+#include "common/utilities.hpp"
 #include "requester.hpp"
-#include "utilities.hpp"
 
 #include <filesystem>
 #include <functional>

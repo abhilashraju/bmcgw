@@ -1,10 +1,9 @@
 #include "bmcgw.hpp"
 
-#include "asyncserver.hpp"
-#include "command_line_parser.hpp"
+#include "common/command_line_parser.hpp"
+#include "common/utilities.hpp"
 #include "http_handler.hpp"
-
-#include <utilities.hpp>
+#include "server/asyncserver.hpp"
 
 #include <chrono>
 #include <filesystem>

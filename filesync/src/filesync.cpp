@@ -1,10 +1,9 @@
-#include "asyncserver.hpp"
-#include "command_line_parser.hpp"
+#include "common/command_line_parser.hpp"
+#include "common/utilities.hpp"
 #include "file_handler.hpp"
 #include "file_sync_session.hpp"
+#include "server/asyncserver.hpp"
 #include "sync.hpp"
-
-#include <utilities.hpp>
 
 #include <chrono>
 #include <filesystem>
