@@ -6,7 +6,7 @@ namespace bmcgw
 {
 struct Requester
 {
-    using Client = WebClient<AsyncSslStream, http::string_body>;
+    using Client = WebClient<CoroSslStream, http::string_body>;
     using Request = Client::Request;
     using Response = Client::Response;
     std::string name;
