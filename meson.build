@@ -24,7 +24,7 @@ core_includes = include_directories(['./include'])
 
 subdir('aggregator')
 subdir('filesync')
-#subdir('fileuploader')
+subdir('reverseproxy')
 subdir('credcopier')
 
 
