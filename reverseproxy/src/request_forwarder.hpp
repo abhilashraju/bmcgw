@@ -53,11 +53,11 @@ struct RequestForwarder
         {
 #ifdef SSL_ON
             auto forwarderType = r["type"].is_null()
-                                     ? std::string("secure_flexible_forwarder")
+                                     ? std::string("secure_generic_forwarder")
                                      : r["type"].get<std::string>();
 #else
             auto forwarderType = r["type"].is_null()
-                                     ? std::string("flexible_forwarder")
+                                     ? std::string("generic_forwarder")
                                      : r["type"].get<std::string>();
 #endif
             auto makeForwader = forwardMaker()[forwarderType];

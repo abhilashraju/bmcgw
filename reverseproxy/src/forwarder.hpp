@@ -84,8 +84,9 @@ struct Forwarder
             return;
         }
         beast::flat_buffer buffer;
-        http::response<http::dynamic_body> res;
+        StringbodyResponse res;
         http::async_read(forwardingSocket, buffer, res, yield[ec]);
+
         if (!checkFail(ec))
         {
             cont(std::move(res));
