@@ -26,6 +26,7 @@ subdir('aggregator')
 subdir('filesync')
 subdir('reverseproxy')
 subdir('credcopier')
+subdir('httpserver')
 
 
 
