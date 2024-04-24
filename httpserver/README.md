@@ -18,7 +18,8 @@ class Hello
     }
 
     reactor::VariantResponse hello(const reactor::StringbodyRequest& req,
-                                   const reactor::http_function& httpfunc)
+                                   const reactor::http_function& httpfunc,
+                                   reactor::net::yield_context yield)
     {
         reactor::http::response<reactor::http::string_body> res{
             http::status::ok, req.version()};
@@ -29,7 +30,8 @@ class Hello
         return res;
     }
     reactor::VariantResponse helloId(const reactor::StringbodyRequest& req,
-                                     const reactor::http_function& httpfunc)
+                                     const reactor::http_function& httpfunc,
+                                     reactor::net::yield_context yield)
     {
         reactor::http::response<reactor::http::string_body> res{
             http::status::ok, req.version()};
@@ -69,3 +71,5 @@ int main(int argc, const char* argv[])
 }
 
 ```
+
+Note the yield context parameter for the handlers. You can use the yield variable to in a coroutine to launch any asynchnouse work
