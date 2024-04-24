@@ -25,7 +25,7 @@ Example of proxy.conf
         "ip": "localhost",
         "port": "8082"
     },
-	{
+    {
         "path": "/redfish/v1/LicenseService/*",
         "ip": "localhost",
         "port": "8083"

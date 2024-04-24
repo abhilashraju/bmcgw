@@ -21,7 +21,8 @@ class Hello
     }
 
     reactor::VariantResponse hello(const reactor::StringbodyRequest& req,
-                                   const reactor::http_function& httpfunc)
+                                   const reactor::http_function& httpfunc,
+                                   reactor::net::yield_context yield)
     {
         reactor::http::response<reactor::http::string_body> res{
             http::status::ok, req.version()};
@@ -32,7 +33,8 @@ class Hello
         return res;
     }
     reactor::VariantResponse helloId(const reactor::StringbodyRequest& req,
-                                     const reactor::http_function& httpfunc)
+                                     const reactor::http_function& httpfunc,
+                                     reactor::net::yield_context yield)
     {
         reactor::http::response<reactor::http::string_body> res{
             http::status::ok, req.version()};

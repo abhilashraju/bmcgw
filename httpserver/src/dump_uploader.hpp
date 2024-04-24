@@ -66,14 +66,16 @@ class DumpUploader
     }
     reactor::VariantResponse
         processUpload(const reactor::DynamicbodyRequest& req,
-                      const reactor::http_function& httpfunc)
+                      const reactor::http_function& httpfunc,
+                      reactor::net::yield_context yield)
     {
         auto filetofetch = std::filesystem::path(rootPath).c_str() +
                            httpfunc["filename"];
         return fetchFileUrl(req, filetofetch);
     }
     reactor::VariantResponse entries(const reactor::DynamicbodyRequest& req,
-                                     const reactor::http_function& httpfunc)
+                                     const reactor::http_function& httpfunc,
+                                     reactor::net::yield_context yield)
     {
         auto filetofetch = std::filesystem::path(rootPath).c_str() +
                            std::string("Entries");
