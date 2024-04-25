@@ -87,7 +87,7 @@ struct Aggregator
             {
                 std::string id = member["@odata.id"];
                 auto splitId = split(id, '/');
-                splitId.back() = name + "_" + splitId.back();
+                splitId.back() = name + "_" + toString(splitId.back());
                 member["@odata.id"] = join(splitId | std::views::drop(1), '/');
                 outer.emplace_back(member);
             }
@@ -116,7 +116,7 @@ struct Aggregator
             cont(VariantResponse(res));
         });
     }
-    auto findResourceRequester(const std::string& item)
+    auto findResourceRequester(std::string_view item)
     {
         return std::ranges::find_if(requesters, [&item](auto& v) {
             return item.starts_with(v.name + "_");
@@ -150,7 +150,7 @@ struct Aggregator
         this->ioc = ioc;
         makeRequesters();
     }
-    bool isAggregatedResource(const std::string& item)
+    bool isAggregatedResource(std::string_view item)
     {
         return findResourceRequester(item) != std::end(requesters);
     }

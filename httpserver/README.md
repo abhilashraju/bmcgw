@@ -72,4 +72,4 @@ int main(int argc, const char* argv[])
 
 ```
 
-Note the yield context parameter for the handlers. You can use the yield variable to in a coroutine to launch any asynchnouse work
+Note the yield context parameter for the handlers. You can use the yield variable in a coroutine to launch any asynchnouse work
