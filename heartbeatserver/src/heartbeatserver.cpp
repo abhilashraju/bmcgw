@@ -61,11 +61,13 @@ struct HeatBeatClient
 };
 int main(int argc, const char* argv[])
 {
-    auto [port] = getArgs(parseCommandline(argc, argv), "-p");
-    if (port.empty())
+    auto [rip, rp, port] = getArgs(parseCommandline(argc, argv), "-rip", "-rp",
+                                   "-p");
+    if (port.empty() || rip.empty() || rp.empty())
     {
         REACTOR_LOG_ERROR("Invalid arguments");
-        REACTOR_LOG_ERROR("eg: heartbeatserver -p port ");
+        REACTOR_LOG_ERROR(
+            "eg: heartbeatserver -p port -rip remote_ip -rp remote_port");
         return 0;
     }
     try
@@ -73,7 +75,7 @@ int main(int argc, const char* argv[])
         reactor::getLogger().setLogLevel(LogLevel::DEBUG);
 
         HeartBeatServer server(port);
-        HeatBeatClient client(server.getIoContext(), "127.0.0.1", port);
+        HeatBeatClient client(server.getIoContext(), rip, rp);
         client.start();
         server.start();
     }
