@@ -2,8 +2,8 @@
 
 #include "common/command_line_parser.hpp"
 #include "common/utilities.hpp"
-#include "server/asyncserver.hpp"
-#include "server/http_handler.hpp"
+#include "server/http/http_handler.hpp"
+#include "server/tcp/asyncserver.hpp"
 
 #include <chrono>
 #include <filesystem>

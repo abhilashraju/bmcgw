@@ -1,7 +1,7 @@
 #include "common/command_line_parser.hpp"
 #include "request_forwarder.hpp"
-#include "server/asyncserver.hpp"
-#include "server/http_handler.hpp"
+#include "server/http/http_handler.hpp"
+#include "server/tcp/asyncserver.hpp"
 
 #include <iostream>
 

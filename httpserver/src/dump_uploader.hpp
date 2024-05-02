@@ -1,7 +1,7 @@
 #pragma once
 #include "common/common_defs.hpp"
-#include "server/http_errors.hpp"
-#include "server/http_target_parser.hpp"
+#include "server/http/http_errors.hpp"
+#include "server/http/http_target_parser.hpp"
 
 #include <filesystem>
 #include <functional>

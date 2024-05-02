@@ -2,7 +2,7 @@
 #include "common/utilities.hpp"
 #include "dump_uploader.hpp"
 #include "hello.hpp"
-#include "server/http_server.hpp"
+#include "server/http/http_server.hpp"
 
 #include <chrono>
 #include <filesystem>

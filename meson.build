@@ -27,6 +27,7 @@ subdir('filesync')
 subdir('reverseproxy')
 subdir('credcopier')
 subdir('httpserver')
+subdir('heartbeatserver')
 
 
 
