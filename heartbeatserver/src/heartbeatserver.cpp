@@ -1,6 +1,9 @@
 #include "client/udp/udp_client.hpp"
 #include "common/command_line_parser.hpp"
+#include "nlohmann/json.hpp"
 #include "server/udp/udp_server.hpp"
+
+#include <fstream>
 using namespace reactor;
 struct HeartBeatServer
 {
@@ -15,7 +18,7 @@ struct HeartBeatServer
         return server.getIoContext();
     }
     void handleRead(const error_code& ec, std::string_view data,
-                    net::yield_context y, auto&& cont)
+                    const udp::endpoint& ep, net::yield_context y, auto&& cont)
     {
         if (ec)
         {
@@ -23,59 +26,68 @@ struct HeartBeatServer
             return;
         }
 
-        REACTOR_LOG_DEBUG("Received: {}", data);
-        cont(data);
+        REACTOR_LOG_DEBUG(
+            "Received From {}, data: {}",
+            ep.address().to_string() + ":" + std::to_string(ep.port()), data);
+        // cont(data);
     }
 };
 struct HeatBeatClient
 {
-    HeatBeatClient(net::io_context& ioc, std::string_view target,
-                   std::string_view port) :
-        ioc(ioc),
-        timer(ioc), host(target.data(), target.length()),
-        port(port.data(), port.length())
+    using Targets = std::vector<std::pair<std::string, std::string>>;
+    HeatBeatClient(net::io_context& ioc, Targets&& tars, int interval = 5) :
+        ioc(ioc), timer(ioc), targets(std::move(tars)), interval(interval)
     {}
     void start()
     {
         net::spawn(ioc, [this](net::yield_context y) {
-            timer.expires_after(std::chrono::seconds(1));
+            timer.expires_after(std::chrono::seconds(interval));
             error_code ec{};
             timer.async_wait(y[ec]);
             if (!ec)
             {
                 std::string_view data = "ping";
-                UdpClient<1024>::send_to(
-                    ioc, y, host, port, net::buffer(data),
-                    [this](const auto& ec, auto&& res) {
-                    REACTOR_LOG_DEBUG("Received Client: {}", res);
-                },
-                    true);
+                for (const auto& [host, port] : targets)
+                {
+                    UdpClient<1024>::send_to(ioc, y, host, port,
+                                             net::buffer(data));
+                }
             }
             start();
         });
     }
     net::io_context& ioc;
     net::steady_timer timer;
-    std::string host;
-    std::string port;
+    Targets targets;
+    int interval;
 };
 int main(int argc, const char* argv[])
 {
-    auto [rip, rp, port] = getArgs(parseCommandline(argc, argv), "-rip", "-rp",
-                                   "-p");
-    if (port.empty() || rip.empty() || rp.empty())
+    auto [conf] = getArgs(parseCommandline(argc, argv), "-conf");
+    if (conf.empty())
     {
         REACTOR_LOG_ERROR("Invalid arguments");
-        REACTOR_LOG_ERROR(
-            "eg: heartbeatserver -p port -rip remote_ip -rp remote_port");
+        REACTOR_LOG_ERROR("eg: heartbeatserver -c config.json");
         return 0;
     }
     try
     {
+        std::ifstream file(conf);
+        if (!file.is_open())
+        {
+            REACTOR_LOG_ERROR("File not found: {}", conf);
+            return 0;
+        }
+        std::string fileContent((std::istreambuf_iterator<char>(file)),
+                                std::istreambuf_iterator<char>());
+        nlohmann::json j = nlohmann::json::parse(fileContent);
         reactor::getLogger().setLogLevel(LogLevel::DEBUG);
 
-        HeartBeatServer server(port);
-        HeatBeatClient client(server.getIoContext(), rip, rp);
+        HeartBeatServer server(j["port"].get<std::string>());
+
+        HeatBeatClient client(server.getIoContext(),
+                              j["targets"].get<HeatBeatClient::Targets>(),
+                              j["interval"].get<int>());
         client.start();
         server.start();
     }
