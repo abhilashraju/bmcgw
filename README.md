@@ -1,8 +1,8 @@
 # BMC Apps
 
-This is repository of useful demons for BMC. This application are proof of concept for the [Reactor](https://github.com/abhilashraju/reactor) library. 
+This is repository of useful applications in a distirbuted service enviroments. This application are proof of concept for the [Reactor](https://github.com/abhilashraju/reactor) library. 
 
-The applications themselves are useful for various usecases we see in BMC.
+The applications themselves are useful for various usecases we see in server management systems.
 
 Following are the list of applications.
 - [Agrregator](https://github.com/abhilashraju/bmcgw/tree/main/aggregator): A redfish aggregator that can scatter the redfish request from clients to multiple satelite BMCs. Aggregate the responses according to agrregator schema. 
