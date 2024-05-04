@@ -121,7 +121,7 @@ int main(int argc, const char* argv[])
     }
     try
     {
-        std::ifstream file(conf);
+        std::ifstream file({conf.data(), conf.length()});
         if (!file.is_open())
         {
             REACTOR_LOG_ERROR("File not found: {}", conf);

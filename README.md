@@ -10,8 +10,9 @@ Following are the list of applications.
 - [CredCopier](https://github.com/abhilashraju/bmcgw/tree/main/credcopier): A Tcpclient that can make connection to remote FileSync server to transfer confidential data through a mutually trusted encrypted channel.
 - [Reverse Proxy](https://github.com/abhilashraju/bmcgw/tree/main/reverseproxy): A reverse proxy implementation that act as an entry point for all redfish endpoint. Using a configuration file BMC can decide to whome the purticular request should be forwarded to. 
 - [HttpServer:](https://github.com/abhilashraju/bmcgw/tree/main/httpserver) A Http Server implimentation that shows how easy it is to write a webserver using the reactor framework.
+- [Heartbeat Server](https://github.com/abhilashraju/bmcgw/tree/main/heartbeatserver) An implementation of heartbeat server based on UDP server/client framework from the [Reactor](https://github.com/abhilashraju/reactor) toolkit.
 
-The backbone of the application is the [Reactor](https://github.com/abhilashraju/reactor) library, which lifts some useful client/server abstractions out of boost::asio and boost::beast libraries. 
+Backbone of all these applications are the [Reactor](https://github.com/abhilashraju/reactor) library, which lifts some useful client/server abstractions out of boost::asio and boost::beast libraries. 
 
 
 ### Architeture
