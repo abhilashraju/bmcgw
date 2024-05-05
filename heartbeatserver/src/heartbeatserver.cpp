@@ -64,11 +64,13 @@ struct HeatBeatClient
                 return;
             }
             REACTOR_LOG_DEBUG("Received: {}", data);
-
-            targets.push_back(std::make_pair(ep.address().to_string(),
-                                             std::to_string(ep.port())));
-            sendBeats();
-        },
+            if (data.starts_with("Connected"))
+            {
+                targets.push_back(std::make_pair(ep.address().to_string(),
+                                                 std::to_string(ep.port())));
+                sendBeats();
+            }
+                },
             true, std::chrono::seconds(15));
     }
     void sendBeats()
