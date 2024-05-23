@@ -28,6 +28,7 @@ subdir('reverseproxy')
 subdir('credcopier')
 subdir('httpserver')
 subdir('heartbeatserver')
+subdir('cert_generator')
 
 
 

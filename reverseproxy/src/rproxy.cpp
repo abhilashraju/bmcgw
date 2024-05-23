@@ -14,9 +14,9 @@ int main(int argc, const char* argv[])
 
     net::io_context io_context;
     RequestForwarder router(std::string{conf.data(), conf.length()});
-
+    net::io_context ioc;
     HttpHandler handler(router);
-    AsyncSslServer<decltype(handler)> server(handler, port, certDir);
+    AsyncSslServer<decltype(handler)> server(ioc, handler, port, certDir);
     server.start();
     return 0;
 }

@@ -207,7 +207,7 @@ struct Aggregator
         StringbodyResponse res{status, 11};
         cont(VariantResponse(std::move(res)));
     }
-    auto operator()(VariantRequest&& request, auto&& cont)
+    auto operator()(VariantRequest&& request, const auto& rep, auto&& cont)
     {
         auto stringRequest = std::get_if<StringbodyRequest>(&request);
         if (!stringRequest)

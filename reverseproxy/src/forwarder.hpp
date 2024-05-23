@@ -13,7 +13,8 @@ struct AbstractForwarder
     {
         this->ioc = ioc;
     }
-    virtual void operator()(VariantRequest&&, ResponseHandler&&) const = 0;
+    virtual void operator()(VariantRequest&&, const tcp::endpoint& ep,
+                            ResponseHandler&&) const = 0;
     virtual ~AbstractForwarder(){};
 };
 template <typename Requester>
@@ -27,7 +28,7 @@ struct CommonForwarderImpl : AbstractForwarder
         target(t), port(p)
     {}
 
-    void operator()(VariantRequest&& requestVar,
+    void operator()(VariantRequest&& requestVar, const tcp::endpoint& rep,
                     ResponseHandler&& cont) const override
     {
         StringbodyRequest* request =

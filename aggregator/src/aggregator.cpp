@@ -37,10 +37,12 @@ int main(int argc, const char* argv[])
         }
         std::string conf((std::istreambuf_iterator<char>(file)),
                          std::istreambuf_iterator<char>());
+        net::io_context ioc;
         Aggregator aggregator(conf);
         HttpHandler handler(aggregator);
+
 #ifdef SSL_ON
-        AsyncSslServer<decltype(handler)> server(handler, port, certDir);
+        AsyncSslServer<decltype(handler)> server(ioc, handler, port, certDir);
 #else
 
 #endif

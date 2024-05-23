@@ -71,7 +71,7 @@ struct Requester
                         machine, port))
                     .create()
                     .post()
-                    .withBody(nlohmann::json{{"UserName", user()},
+                    .withJson(nlohmann::json{{"UserName", user()},
                                              {"Password", password()}})
                     .toMono();
             mono->asJson([this, mono, cont = std::move(cont)](auto& v) {
@@ -125,6 +125,24 @@ struct Requester
                             .withBody(req.body())
                             .withHeader({"X-Auth-Token", token})
                             .toMono();
+            mono->asJson([cont = std::move(cont), mono](auto v) { cont(v); });
+        });
+    }
+    template <typename Contiuation>
+    void post(std::string_view target, nlohmann::json&& body, Contiuation cont)
+    {
+        getToken(
+            [this, cont = std::move(cont), target, body = std::move(body)]() {
+            auto mono =
+                Client::builder()
+                    .withSession(ioc.get_executor(), getContext())
+                    .withEndpoint(std::format("https://{}:{}", machine, port))
+                    .withTarget(target)
+                    .create()
+                    .post()
+                    .withJson(body)
+                    .withHeader({"X-Auth-Token", token})
+                    .toMono();
             mono->asJson([cont = std::move(cont), mono](auto v) { cont(v); });
         });
     }

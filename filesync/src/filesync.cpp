@@ -28,11 +28,12 @@ int main(int argc, const char* argv[])
     }
     try
     {
+        net::io_context ioc;
         reactor::getLogger().setLogLevel(LogLevel::ERROR);
         SyncHandler handler;
 #ifdef SSL_ON
-        AsyncSslServer<decltype(handler), MtlsStreamMaker> server(handler, port,
-                                                                  cert.data());
+        AsyncSslServer<decltype(handler), MtlsStreamMaker> server(
+            ioc, handler, port, cert.data());
 #else
 
 #endif

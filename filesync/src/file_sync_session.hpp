@@ -94,6 +94,10 @@ struct FileSyncSession
             return;
         }
         ssl::context ssl_context(ssl::context::sslv23_client);
+        ssl_context.use_certificate_chain_file(
+            "/Users/abhilashraju/work/cpp/bmcgw/build/cert_generator/client-cert.pem");
+        ssl_context.use_private_key_file("client-key.pem", ssl::context::pem);
+
         TcpClient client(io_context, ssl_context);
         if (!client.connect(server, port, yield))
         {

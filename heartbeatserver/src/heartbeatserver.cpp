@@ -2,16 +2,24 @@
 #include "common/command_line_parser.hpp"
 #include "common/utilities.hpp"
 #include "nlohmann/json.hpp"
+#include "secure_channel.hpp"
 #include "server/udp/udp_server.hpp"
 
 #include <fstream>
+
 using namespace reactor;
+
 struct HeartBeatServer
 {
+    SecureChannel::Server keyServer;
     UdpServer<HeartBeatServer> server;
-    HeartBeatServer(std::string_view port) : server(port, *this) {}
+    HeartBeatServer(net::io_context& ioc, const Targets& targets,
+                    std::string_view port, std::string_view cert) :
+        keyServer(ioc, port, cert), server(ioc, port, *this)
+    {}
     void start()
     {
+        keyServer.listen();
         server.start();
     }
     net::io_context& getIoContext()
@@ -34,30 +42,28 @@ struct HeartBeatServer
             REACTOR_LOG_ERROR("Error receiving data: {}", ec.message());
             return;
         }
-
+        auto plainData = keyServer.decrypt(data);
         REACTOR_LOG_DEBUG(
             "Received From {}, data: {}",
             ep.address().to_string() + ":" + std::to_string(ep.port()), data);
-        if (data.starts_with("Connect:") && !checkSelf(ep))
+        if (plainData.starts_with("Connect:") && !checkSelf(ep))
         {
-            cont(std::string_view("Connected"));
+            cont(std::string_view(keyServer.encrypt("Connected")));
         }
     }
 };
-struct HeatBeatClient
+struct HeartBeatClient
 {
-    using Targets = std::vector<std::pair<std::string, std::string>>;
-    HeatBeatClient(net::io_context& ioc, const std::string& sp, Targets&& tars,
-                   int interval = 5) :
-        ioc(ioc),
-        timer(ioc), targets(std::move(tars)), servPort(sp), interval(interval)
+    HeartBeatClient(net::io_context& ioc, const std::string& sp, Targets&& tars,
+                    int interval = 5) :
+        ioc(ioc), timer(ioc), targets(std::move(tars)), servPort(sp),
+        interval(interval)
     {}
     void findPeers(net::yield_context y)
     {
-        UdpClient<1024>::broadcast(
-            ioc, y, servPort, net::buffer("Connect:"),
-            [this](const error_code& ec, const auto& ep,
-                   std::string_view data) {
+        UdpClient<1024>::broadcast(ioc, y, servPort, net::buffer("Connect:"),
+                                   [this](const error_code& ec, const auto& ep,
+                                          std::string_view data) {
             if (ec)
             {
                 REACTOR_LOG_ERROR("Error sending data: {}", ec.message());
@@ -70,8 +76,8 @@ struct HeatBeatClient
                                                  std::to_string(ep.port())));
                 sendBeats();
             }
-                },
-            true, std::chrono::seconds(15));
+        },
+                                   true, std::chrono::seconds(15));
     }
     void sendBeats()
     {
@@ -100,7 +106,7 @@ struct HeatBeatClient
     {
         if (targets.empty())
         {
-            net::spawn(ioc, std::bind_front(&HeatBeatClient::findPeers, this));
+            net::spawn(ioc, std::bind_front(&HeartBeatClient::findPeers, this));
             return;
         }
         sendBeats();
@@ -114,7 +120,8 @@ struct HeatBeatClient
 };
 int main(int argc, const char* argv[])
 {
-    auto [conf] = getArgs(parseCommandline(argc, argv), "-conf");
+    auto [conf, cert] = getArgs(parseCommandline(argc, argv), "-conf",
+                                "-certdir");
     if (conf.empty())
     {
         REACTOR_LOG_ERROR("Invalid arguments");
@@ -133,12 +140,14 @@ int main(int argc, const char* argv[])
                                 std::istreambuf_iterator<char>());
         nlohmann::json j = nlohmann::json::parse(fileContent);
         reactor::getLogger().setLogLevel(LogLevel::DEBUG);
+        net::io_context ioc;
+        auto targets = j["targets"].get<Targets>();
+        HeartBeatServer server(ioc, targets, j["port"].get<std::string>(),
+                               cert);
 
-        HeartBeatServer server(j["port"].get<std::string>());
-        auto targets = j["targets"].get<HeatBeatClient::Targets>();
-        HeatBeatClient client(server.getIoContext(),
-                              j["port"].get<std::string>(), std::move(targets),
-                              j["interval"].get<int>());
+        HeartBeatClient client(server.getIoContext(),
+                               j["port"].get<std::string>(), std::move(targets),
+                               j["interval"].get<int>());
         client.start();
         server.start();
     }
