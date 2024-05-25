@@ -28,7 +28,7 @@ int main(int argc, const char* argv[])
         net::io_context ioc;
         reactor::getLogger().setLogLevel(LogLevel::DEBUG);
 
-        HttpsServer server(ioc, port, cert);
+        HttpMtlsServer server(ioc, port, cert, cert);
         redfish::DumpUploader uploader(server.router(), "/tmp");
         redfish::Hello hello(server.router());
         server.start();

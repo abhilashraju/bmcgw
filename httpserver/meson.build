@@ -1,4 +1,3 @@
-
 httpserver_includes = include_directories(['./src'])
 httpserver_sources = [
     'src/httpserver.cpp'
