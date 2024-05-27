@@ -243,14 +243,14 @@ int main(int argc, const char* argv[])
     REACTOR_LOG_DEBUG("CA Cert: {}", caCertStr);
     j["CertificateString"] = caCertStr;
     j["CertificateType"] = "PEM";
-    j["CertificateUri"]["@odata.id"] = caCertPath + "/2";
+    // j["CertificateUri"]["@odata.id"] = caCertPath + "/2";
     REACTOR_LOG_DEBUG("Json: {}", j.dump());
     bmcgw::Requester requester(ioc);
-    requester.withMachine("rain104bmc.aus.stglabs.ibm.com")
+    requester.withMachine("rain135bmc.aus.stglabs.ibm.com")
         .withPort("443")
         .withName("test");
     requester.withCredentials("service", "0penBmc0");
-    requester.post(replaceCertPath, std::move(j), [](auto& v) {
+    requester.post(caCertPath, std::move(j), [](auto& v) {
         REACTOR_LOG_DEBUG("Response: {}", v.response().data().dump());
     });
     ioc.run();

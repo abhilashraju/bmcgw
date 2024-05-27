@@ -142,6 +142,7 @@ struct Requester
                     .post()
                     .withJson(body)
                     .withHeader({"X-Auth-Token", token})
+                    .withHeader({"content_type", "application/json"})
                     .toMono();
             mono->asJson([cont = std::move(cont), mono](auto v) { cont(v); });
         });
