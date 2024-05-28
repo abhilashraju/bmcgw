@@ -25,9 +25,9 @@ struct Requester
         token = std::string();
         return *this;
     }
-    Requester& withMachine(std::string machine)
+    Requester& withMachine(std::string_view machine)
     {
-        this->machine = std::move(machine);
+        this->machine = {machine.data(), machine.length()};
         return *this;
     }
     Requester& withName(std::string nm)
@@ -35,9 +35,9 @@ struct Requester
         this->name = std::move(nm);
         return *this;
     }
-    Requester& withPort(std::string port)
+    Requester& withPort(std::string_view port)
     {
-        this->port = std::move(port);
+        this->port = {port.data(), port.length()};
         return *this;
     }
 

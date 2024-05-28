@@ -171,7 +171,9 @@ std::string readCert(X509* cert)
 }
 int main(int argc, const char* argv[])
 {
-    auto [conf] = getArgs(parseCommandline(argc, argv), "-conf");
+    auto [conf, machine, p, user,
+          passwd] = getArgs(parseCommandline(argc, argv), "-conf", "-machine",
+                            "-p", "-user", "-password");
     int serial = 1000;
     std::ifstream file(conf);
     nlohmann::json caConf = nlohmann::json::parse(file);
@@ -246,10 +248,8 @@ int main(int argc, const char* argv[])
     // j["CertificateUri"]["@odata.id"] = caCertPath + "/2";
     REACTOR_LOG_DEBUG("Json: {}", j.dump());
     bmcgw::Requester requester(ioc);
-    requester.withMachine("rain135bmc.aus.stglabs.ibm.com")
-        .withPort("443")
-        .withName("test");
-    requester.withCredentials("service", "0penBmc0");
+    requester.withMachine(machine).withPort(p).withName("test");
+    requester.withCredentials(user, passwd);
     requester.post(caCertPath, std::move(j), [](auto& v) {
         REACTOR_LOG_DEBUG("Response: {}", v.response().data().dump());
     });

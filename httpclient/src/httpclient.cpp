@@ -15,12 +15,12 @@ constexpr const char* trustStorePath =
 ssl::context getContext()
 {
     ssl::context ctx{ssl::context::tlsv12_client};
-    ctx.set_verify_mode(ssl::verify_peer);
-    ctx.load_verify_file(std::string(trustStorePath) + "ca-cer.pem");
-    ctx.use_certificate_chain_file(std::string(trustStorePath) +
-                                   "client-cert.pem");
-    ctx.use_private_key_file(std::string(trustStorePath) + "client-key.pem",
-                             ssl::context::pem);
+    ctx.set_verify_mode(ssl::verify_none);
+    // ctx.load_verify_file(std::string(trustStorePath) + "ca-cer.pem");
+    // ctx.use_certificate_chain_file(std::string(trustStorePath) +
+    //                                "client-cert.pem");
+    // ctx.use_private_key_file(std::string(trustStorePath) + "client-key.pem",
+    //                          ssl::context::pem);
     return ctx;
 }
 int main(int argc, const char* argv[])
@@ -44,7 +44,7 @@ int main(int argc, const char* argv[])
         auto mono =
             Client::builder()
                 .withSession(ioc.get_executor(), ctx)
-                .withEndpoint(std::format("https://{}:{}/hello/me", ip, port))
+                .withEndpoint(std::format("https://{}:{}/redfish/v1", ip, port))
                 .create()
                 .get()
                 .toMono();
