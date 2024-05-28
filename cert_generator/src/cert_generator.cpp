@@ -239,7 +239,8 @@ int main(int argc, const char* argv[])
     net::io_context ioc;
     nlohmann::json j;
 
-    std::string caCertPath = "/redfish/v1/Managers/bmc/Truststore/Certificates";
+    std::string caCertPath =
+        "/redfish/v1/Managers/bmc/Truststore/Certificates/ca-cert.pem";
     std::string replaceCertPath = "/redfish/v1/CertificateService/Actions/";
     replaceCertPath += "CertificateService.ReplaceCertificate";
     REACTOR_LOG_DEBUG("CA Cert: {}", caCertStr);

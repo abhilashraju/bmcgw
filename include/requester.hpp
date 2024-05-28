@@ -80,7 +80,7 @@ struct Requester
                     REACTOR_LOG_ERROR("Error: {}", v.error().message());
                     return;
                 }
-                REACTOR_LOG_ERROR("Error: {}", v.response().data().dump(4));
+                REACTOR_LOG_DEBUG("Error: {}", v.response().data().dump(4));
                 token = v.response().getHeaders()["X-Auth-Token"];
                 cont();
             });

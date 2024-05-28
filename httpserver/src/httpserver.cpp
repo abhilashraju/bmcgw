@@ -1,3 +1,4 @@
+#include "certificate_installer.hpp"
 #include "common/command_line_parser.hpp"
 #include "common/utilities.hpp"
 #include "dump_uploader.hpp"
@@ -28,9 +29,10 @@ int main(int argc, const char* argv[])
         net::io_context ioc;
         reactor::getLogger().setLogLevel(LogLevel::DEBUG);
 
-        HttpMtlsServer server(ioc, port, cert, cert);
+        HttpsServer server(ioc, port, cert, cert);
         redfish::DumpUploader uploader(server.router(), "/tmp");
         redfish::Hello hello(server.router());
+        redfish::CertificateInstaller installer(server.router());
         server.start();
     }
     catch (const std::exception& e)
