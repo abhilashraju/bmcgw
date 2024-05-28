@@ -175,7 +175,7 @@ int main(int argc, const char* argv[])
           passwd] = getArgs(parseCommandline(argc, argv), "-conf", "-machine",
                             "-p", "-user", "-password");
     int serial = 1000;
-    std::ifstream file(conf);
+    std::ifstream file({conf.data(), conf.length()});
     nlohmann::json caConf = nlohmann::json::parse(file);
 
     std::pair<EVP_PKEY*, X509*> caCertPair = generateCACert(serial,
