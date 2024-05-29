@@ -26,8 +26,8 @@ ssl::context getContext()
 int main(int argc, const char* argv[])
 {
     // Create a server endpoint
-    auto [ip, port, cert] = getArgs(parseCommandline(argc, argv), "-ip", "-p",
-                                    "-certdir");
+    auto [ip, port, cert, t] = getArgs(parseCommandline(argc, argv), "-ip",
+                                       "-p", "-certdir", "-t");
     reactor::getLogger().setLogLevel(LogLevel::ERROR);
     if (port.empty() || cert.empty() || ip.empty())
     {
@@ -44,7 +44,7 @@ int main(int argc, const char* argv[])
         auto mono =
             Client::builder()
                 .withSession(ioc.get_executor(), ctx)
-                .withEndpoint(std::format("https://{}:{}/redfish/v1", ip, port))
+                .withEndpoint(std::format("https://{}:{}/{}", ip, port, t))
                 .create()
                 .get()
                 .toMono();
