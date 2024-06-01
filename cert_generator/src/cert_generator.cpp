@@ -142,6 +142,13 @@ std::pair<EVP_PKEY*, X509*>
 
     return std::make_pair(key, cert);
 }
+std::string getCertHash(auto cert)
+{
+    unsigned long hash = X509_NAME_hash(X509_get_subject_name(cert));
+    std::stringstream ss;
+    ss << std::hex << hash;
+    return ss.str();
+}
 struct CFile
 {
     FILE* file;
@@ -229,6 +236,9 @@ int main(int argc, const char* argv[])
     PEM_write_X509(serverCertFile, serverCert);
 
     auto caCertStr = readCert(caCertPair.second);
+    std::string cahash = getCertHash(caCertPair.second);
+    std::ofstream caCertFile(std::format("{}.0.cacert", cahash));
+    caCertFile << caCertStr;
     // Clean up
     EVP_PKEY_free(caKey);
     X509_free(caCert);

@@ -27,6 +27,7 @@ class Hello
                                    const reactor::http_function& httpfunc,
                                    reactor::net::yield_context yield)
     {
+        REACTOR_LOG_DEBUG("Received request: {}", req.body());
         reactor::http::response<reactor::http::string_body> res{
             http::status::ok, req.version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
