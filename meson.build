@@ -31,6 +31,10 @@ subdir('heartbeatserver')
 subdir('cert_generator')
 subdir('httpclient')
 
+if host_machine.system() == 'linux'
+  subdir('netlinkmon')
+endif
+
 
 
 
